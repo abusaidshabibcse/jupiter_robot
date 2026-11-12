@@ -6,7 +6,7 @@
 | Size | 20.42 MB |
 | Image size | 640 |
 | Device | 0 |
-| Evaluated | 2026-11-12T14:45:59.309828+00:00 |
+| Evaluated | 2026-11-12T15:36:36.539794+00:00 |
 
 ## Leaf validation (85 photos)
 
@@ -17,7 +17,7 @@
 | mAP50 | 0.9300 |
 | mAP50-95 | 0.5283 |
 
-Ultralytics plots: `testing/runs/yolo26s-leaf`
+Ultralytics plots: `testing/runs/yolo26s/leaf`
 
 ## Held-out COCO128 (26 photos)
 
@@ -28,4 +28,4 @@ Ultralytics plots: `testing/runs/yolo26s-leaf`
 | mAP50 | 0.4843 |
 | mAP50-95 | 0.2595 |
 
-Ultralytics plots: `testing/runs/yolo26s-coco128`
+Ultralytics plots: `testing/runs/yolo26s/coco128`

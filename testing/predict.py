@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Draw detections and save the images under testing/runs/predict/.
 
-    # 2-core / CPU laptop (nano)
-    python testing/predict.py --model yolo26n --device cpu --imgsz 416 --source photo.jpg
+    python testing/predict.py --source photo.jpg
+    python testing/predict.py --model yolov8m --source photo.jpg
 
-    # Stronger GPU model
-    python testing/predict.py --model yolo26s --source photo.jpg
+The default weights are training/runs/yolo26s/weights/best.pt.
+--model accepts any of the six fine-tuned best.pt files:
+yolov8s, yolov8m, yolo11s, yolo11m, yolo26s, yolo26m.
 """
 
 from __future__ import annotations
@@ -16,27 +17,36 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-def resolve_weights(root: Path, model: str | None, weights: Path | None) -> Path:
-    if weights is not None:
-        return weights
-    if model:
-        path = Path(model)
-        if path.suffix == ".pt" or path.is_file():
-            return path
-        candidate = root / "training" / "runs" / model / "weights" / "best.pt"
-        if candidate.is_file():
-            return candidate
-        raise SystemExit(
-            f"Weights not found for model '{model}': {candidate}\n"
-            f"Train first with: python training/train.py --model {model}.pt"
-        )
-    for name in ("yolo11n", "yolo26n", "yolov8n", "yolo26s", "coco128-leaf"):
-        candidate = root / "training" / "runs" / name / "weights" / "best.pt"
-        if candidate.is_file():
-            return candidate
+ALLOWED = ("yolov8s", "yolov8m", "yolo11s", "yolo11m", "yolo26s", "yolo26m")
+
+
+def allowed_list() -> str:
+    return ", ".join(ALLOWED)
+
+
+def best_pt(root: Path, name: str) -> Path:
+    return root / "training" / "runs" / name / "weights" / "best.pt"
+
+
+def resolve_weights(root: Path, model: str) -> tuple[Path, str]:
+    raw_path = Path(model)
+    candidates = [raw_path]
+    if not raw_path.is_absolute():
+        candidates.extend((Path.cwd() / raw_path, root / raw_path))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        resolved = candidate.resolve()
+        for name in ALLOWED:
+            weights = best_pt(root, name).resolve()
+            if resolved == weights:
+                return weights, name
+    stem = raw_path.stem if raw_path.suffix == ".pt" else model
+    if "/" not in model and "\\" not in model and stem in ALLOWED:
+        return best_pt(root, stem), stem
     raise SystemExit(
-        "No trained weights found under training/runs/.\n"
-        "Train with: python training/train.py --model yolo11n.pt"
+        f"Refusing model '{model}'. Choose one of: {allowed_list()}\n"
+        "Or pass that run's training/runs/<model>/weights/best.pt path."
     )
 
 
@@ -44,30 +54,27 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     testing_dir = Path(__file__).resolve().parent
     root = testing_dir.parent
-    parser.add_argument("--model", default="yolo11n",
-                        help="Run name (yolo11n, yolov8n, yolo26n, yolo26s) or a .pt path. Default: yolo11n.")
+    parser.add_argument("--model", default="yolo26s",
+                        help=f"One of {allowed_list()}, or that run's best.pt. Default: yolo26s.")
     parser.add_argument("--weights", type=Path, default=None,
-                        help="Explicit checkpoint path. Overrides --model.")
+                        help="Explicit best.pt. Must be one of the six fine-tuned checkpoints.")
     parser.add_argument("--source", required=True, help="Image, folder, or video.")
     parser.add_argument("--conf", type=float, default=0.25)
     parser.add_argument("--imgsz", type=int, default=416,
-                        help="Inference size. 416 is a good default for 2-core CPU; use 640 on GPU.")
+                        help="Inference size. 416 is a good default for CPU; use 640 on GPU.")
     parser.add_argument("--device", default="cpu",
                         help="cpu, or a GPU index such as 0.")
     parser.add_argument("--out", type=Path, default=None,
                         help="Output folder. Defaults to testing/runs/predict/<model>/.")
     args = parser.parse_args()
 
-    weights = resolve_weights(root, args.model, args.weights)
+    weights, run_tag = resolve_weights(root, str(args.weights) if args.weights else args.model)
     if not weights.is_file():
         raise SystemExit(
             f"Weights not found: {weights}\n"
-            "Train first with: python training/train.py --model yolo26n.pt"
+            "Train first with: python training/train.py"
         )
 
-    run_tag = args.weights.parent.parent.name if args.weights else (
-        Path(args.model).stem if str(args.model).endswith(".pt") else args.model
-    )
     out_dir = args.out or (testing_dir / "runs" / "predict" / run_tag)
 
     from ultralytics import YOLO

@@ -1,47 +1,57 @@
 # Training
 
-Fine-tune a COCO-pretrained YOLO26 checkpoint on `dataset/combined/coco128_leaf/data.yaml`.
-
-## Models
-
-Each family gets its own run folder under `training/runs/<name>/weights/best.pt`.
-
-| Run folder | Base weights | Best for |
-| --- | --- | --- |
-| `yolov8n/` | `yolov8n.pt` | Classic YOLOv8 nano (CPU-friendly) |
-| `yolo11n/` | `yolo11n.pt` | YOLO11 nano (CPU-friendly) |
-| `yolo26n/` | `yolo26n.pt` | YOLO26 nano (CPU-friendly default) |
-| `yolo26s/` | `yolo26s.pt` | YOLO26 small (stronger GPU model) |
-| `coco128-leaf/` | legacy YOLO26s path | older clones |
-
-Report-ready numbers for every model are under [`../results/`](../results/).
-
-## Commands
+Fine-tune YOLOv8, YOLO11, and YOLO26 in the s and m sizes on `dataset/combined/coco128_leaf/data.yaml`.
 
 ```bash
 source .venv/bin/activate
-
-python training/train.py --model yolov8n.pt
-python training/train.py --model yolo11n.pt
-python training/train.py --model yolo26n.pt
-python training/train.py --model yolo26s.pt
+python training/train.py
 ```
 
-On a 2-core machine that must train locally:
+That command trains these six checkpoints and nothing else:
 
-```bash
-python training/train.py --model yolo26n.pt --device cpu --batch 4 --workers 0
-```
+| Run folder | Base weights |
+| --- | --- |
+| `yolov8s/` | `yolov8s.pt` |
+| `yolov8m/` | `yolov8m.pt` |
+| `yolo11s/` | `yolo11s.pt` |
+| `yolo11m/` | `yolo11m.pt` |
+| `yolo26s/` | `yolo26s.pt` |
+| `yolo26m/` | `yolo26m.pt` |
 
-## Technique
+A `.yaml` file or any other model name is refused. YOLO11 has no `v` in the filename.
+
+## Recipe
+
+Every run uses the same settings, so the scores compare the architectures:
 
 - Supervised fine-tune of a COCO-pretrained checkpoint
 - Leaf is class `80` so COCO classes `0`–`79` keep their pretrained head rows
-- First 10 layers frozen; AdamW at learning rate `0.001`
+- First 10 layers frozen
+- AdamW at learning rate `0.001`
+- 80 epochs, patience 20, image size 640, batch 16
 - Mild geometric augmentation (rotate, flips, mosaic)
 
-Full rationale and measured scores: [../docs/PROJECT.md](../docs/PROJECT.md).
+If an m model runs out of memory on the 12 GB GPU, that model is trained again at batch 8:
+
+```bash
+python training/train.py --model yolov8m.pt --batch 8
+```
 
 ## Output
 
-Each run writes `training/runs/<model-stem>/weights/best.pt`. Keep that file for testing and laptop use.
+Each run writes `training/runs/<model>/weights/best.pt`.
+
+## Measured on this machine
+
+| Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| yolov8s | 0.988 | 0.972 | 0.983 | 0.741 | 0.334 | 0.183 |
+| yolov8m | 0.996 | 0.988 | 0.993 | 0.814 | 0.319 | 0.183 |
+| yolo11s | 0.977 | 0.991 | 0.994 | 0.872 | 0.265 | 0.174 |
+| yolo11m | 0.967 | 0.918 | 0.973 | 0.817 | 0.278 | 0.150 |
+| yolo26s | 0.893 | 0.879 | 0.930 | 0.528 | 0.484 | 0.260 |
+| yolo26m | 0.963 | 0.988 | 0.992 | 0.753 | 0.359 | 0.199 |
+
+All six finished at batch 16.
+
+Full rationale: [../docs/PROJECT.md](../docs/PROJECT.md).
