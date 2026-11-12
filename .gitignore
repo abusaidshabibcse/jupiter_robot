@@ -1,0 +1,33 @@
+# Photos, archives, and generated training sets. Scripts and READMEs stay tracked.
+dataset/raw/
+dataset/labeled/
+dataset/combined/coco128/
+dataset/combined/coco128_leaf/
+dataset/combined/*.zip
+
+# Training and test outputs
+training/runs/
+testing/runs/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.cache
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Tooling and OS
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+wandb/
+.DS_Store
+.idea/
+.vscode/
+*.swp
