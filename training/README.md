@@ -1,23 +1,44 @@
 # Training
 
-`train.py` fine-tunes pretrained `yolo26s.pt` on `dataset/combined/coco128_leaf/data.yaml`.
+Fine-tune a COCO-pretrained YOLO26 checkpoint on `dataset/combined/coco128_leaf/data.yaml`.
+
+## Models
+
+| Run folder | Checkpoint | Best for | Size |
+| --- | --- | --- | --- |
+| `runs/yolo26n/` | `yolo26n.pt` → `weights/best.pt` | **2-core / CPU laptop** | ~5 MB class |
+| `runs/yolo26s/` | `yolo26s.pt` → `weights/best.pt` | GPU / better boxes | ~20 MB |
+| `runs/coco128-leaf/` | legacy alias of the s-model | older docs/clones | ~20 MB |
+
+`yolo26n` is the nano YOLO26 model. It is the lightest current Ultralytics YOLO26 detector and the one meant for a weak CPU. `yolo26s` is kept for higher accuracy when a GPU is available.
+
+## Commands
 
 ```bash
 source .venv/bin/activate
-python training/train.py
+
+# CPU-friendly nano (default)
+python training/train.py --model yolo26n.pt
+
+# Stronger small model
+python training/train.py --model yolo26s.pt
+```
+
+On a 2-core machine that must train locally:
+
+```bash
+python training/train.py --model yolo26n.pt --device cpu --batch 4 --workers 0
 ```
 
 ## Technique
 
-- Supervised fine-tune of a COCO-pretrained YOLO26s checkpoint
+- Supervised fine-tune of a COCO-pretrained checkpoint
 - Leaf is class `80` so COCO classes `0`–`79` keep their pretrained head rows
 - First 10 layers frozen; AdamW at learning rate `0.001`
 - Mild geometric augmentation (rotate, flips, mosaic)
 
-Full rationale and measured scores are in [../docs/PROJECT.md](../docs/PROJECT.md).
+Full rationale and measured scores: [../docs/PROJECT.md](../docs/PROJECT.md).
 
 ## Output
 
-Logs and weights go to `training/runs/coco128-leaf/`. Keep `weights/best.pt`.
-
-On this machine the run stopped at epoch 21 by early stopping. The saved `best.pt` is the mixed-validation peak (epoch 1). Leaf-only testing of that file scored **mAP50 0.930** and **mAP50-95 0.528** on the 85 leaf validation photos.
+Each run writes `training/runs/<model-stem>/weights/best.pt`. Keep that file for testing and laptop use.

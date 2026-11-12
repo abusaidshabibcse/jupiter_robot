@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Fine-tune YOLO26 on the COCO128 + leaf dataset.
+"""Fine-tune a pretrained YOLO checkpoint on the COCO128 + leaf dataset.
 
-    python training/train.py
+    # Quality model (larger, better boxes)
+    python training/train.py --model yolo26s.pt
 
-The starting file is yolo26s.pt, which is already trained on full COCO.
-Training reads dataset/combined/coco128_leaf/data.yaml and writes logs
-and weights under training/runs/.
+    # CPU / 2-core friendly model (nano)
+    python training/train.py --model yolo26n.pt
+
+Weights land under training/runs/<name>/weights/best.pt.
+The default run name is the model stem (yolo26s, yolo26n, ...).
 """
 
 from __future__ import annotations
@@ -19,16 +22,20 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser.add_argument("--data", type=Path,
                         default=root / "dataset" / "combined" / "coco128_leaf" / "data.yaml")
-    parser.add_argument("--model", default="yolo26s.pt")
+    parser.add_argument("--model", default="yolo26n.pt",
+                        help="Pretrained Ultralytics checkpoint. yolo26n is for 2-core/CPU; yolo26s is stronger.")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--device", default="0", help="GPU index, or 'cpu'.")
+    parser.add_argument("--workers", type=int, default=8,
+                        help="Dataloader workers. Use 0 or 2 on a 2-core machine.")
     parser.add_argument("--freeze", type=int, default=10,
                         help="Freeze the first N layers. 10 keeps the backbone. Use 0 to train everything.")
     parser.add_argument("--lr0", type=float, default=0.001,
                         help="Initial learning rate. Use 0.0003 for the unfrozen second stage.")
-    parser.add_argument("--name", default="coco128-leaf")
+    parser.add_argument("--name", default=None,
+                        help="Run folder under training/runs/. Defaults to the model stem.")
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
 
@@ -36,6 +43,8 @@ def main() -> None:
         raise SystemExit("Refusing to train from a .yaml file. Pass a pretrained .pt checkpoint.")
     if not args.data.exists():
         raise SystemExit(f"Dataset yaml not found: {args.data}")
+
+    run_name = args.name or Path(args.model).stem
 
     from ultralytics import YOLO
 
@@ -46,6 +55,7 @@ def main() -> None:
         imgsz=args.imgsz,
         batch=args.batch,
         device=args.device,
+        workers=args.workers,
         freeze=args.freeze if args.freeze > 0 else None,
         optimizer="AdamW",
         lr0=args.lr0,
@@ -60,7 +70,7 @@ def main() -> None:
         close_mosaic=10,
         cache=True,
         project=str(Path(__file__).resolve().parent / "runs"),
-        name=args.name,
+        name=run_name,
         exist_ok=False,
         resume=args.resume,
     )

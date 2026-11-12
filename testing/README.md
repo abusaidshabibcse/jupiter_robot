@@ -2,17 +2,25 @@
 
 ```bash
 source .venv/bin/activate
-python testing/test.py
-python testing/predict.py --source path/to/photo.jpg
+
+# 2-core / CPU laptop (nano, default)
+python testing/predict.py --model yolo26n --device cpu --imgsz 416 --source photo.jpg
+
+# Stronger GPU model
+python testing/predict.py --model yolo26s --device 0 --imgsz 640 --source photo.jpg
+
+# Score held-out sets (needs local dataset images)
+python testing/test.py --model yolo26n
+python testing/test.py --model yolo26s
 ```
 
-`test.py` scores `training/runs/coco128-leaf/weights/best.pt` on the leaf validation photos and on held-out COCO128. `predict.py` saves boxed images under `testing/runs/predict/`. The leaf class is class **80** and prints as `leaf`.
+`predict.py` saves boxed images under `testing/runs/predict/<model>/`. The leaf class is class **80** and prints as `leaf`.
 
-## Measured scores
+## Measured leaf scores
 
-| Set | Images | Precision | Recall | mAP50 | mAP50-95 |
-| --- | --- | --- | --- | --- | --- |
-| Leaf validation | 85 | 0.893 | 0.879 | 0.930 | 0.528 |
-| Held-out COCO128 | 26 | 0.523 | 0.447 | 0.484 | 0.260 |
+| Model | Weights | mAP50 | mAP50-95 | Use |
+| --- | --- | --- | --- | --- |
+| yolo26n | `training/runs/yolo26n/weights/best.pt` | 0.817 | 0.514 | 2-core / CPU |
+| yolo26s | `training/runs/yolo26s/weights/best.pt` | 0.930 | 0.528 | GPU / quality |
 
-The leaf row is the leaf-detection result. Details are in [../docs/PROJECT.md](../docs/PROJECT.md).
+Details: [../docs/PROJECT.md](../docs/PROJECT.md).
