@@ -2,16 +2,19 @@
 
 Leaf detection on the held-out 85 leaf photos, plus held-out COCO128.
 Each model has its own folder under `results/` for the report.
+The leaf row is the performance number for this project.
 
-| Model | Size (MB) | Leaf P | Leaf R | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | Report folder |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| yolov8n | 6.53 | 0.462 | 0.906 | 0.525 | 0.285 | 0.354 | [`results/yolov8n/`](yolov8n/) |
-| yolo11n | 5.53 | 0.987 | 0.965 | 0.980 | 0.813 | 0.298 | [`results/yolo11n/`](yolo11n/) |
-| yolo26n | 5.52 | 0.706 | 0.906 | 0.817 | 0.514 | 0.457 | [`results/yolo26n/`](yolo26n/) |
-| yolo26s | 20.42 | 0.893 | 0.879 | 0.930 | 0.528 | 0.484 | [`results/yolo26s/`](yolo26s/) |
+| Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| yolov8s | 0.988 | 0.972 | 0.983 | 0.741 | 0.334 | 0.183 |
+| yolov8m | 0.996 | 0.988 | 0.993 | 0.814 | 0.319 | 0.183 |
+| yolo11s | 0.977 | 0.991 | 0.994 | 0.872 | 0.265 | 0.174 |
+| yolo11m | 0.967 | 0.918 | 0.973 | 0.817 | 0.278 | 0.150 |
+| yolo26s | 0.893 | 0.879 | 0.930 | 0.528 | 0.484 | 0.260 |
+| yolo26m | 0.963 | 0.988 | 0.992 | 0.753 | 0.359 | 0.199 |
 
 ## How to reproduce
 
 ```bash
-python results/evaluate_models.py
+python testing/test.py
 ```
