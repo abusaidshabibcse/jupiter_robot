@@ -30,13 +30,13 @@ def resolve_weights(root: Path, model: str | None, weights: Path | None) -> Path
             f"Weights not found for model '{model}': {candidate}\n"
             f"Train first with: python training/train.py --model {model}.pt"
         )
-    for name in ("yolo26n", "yolo26s", "coco128-leaf"):
+    for name in ("yolo11n", "yolo26n", "yolov8n", "yolo26s", "coco128-leaf"):
         candidate = root / "training" / "runs" / name / "weights" / "best.pt"
         if candidate.is_file():
             return candidate
     raise SystemExit(
         "No trained weights found under training/runs/.\n"
-        "Train with: python training/train.py --model yolo26n.pt"
+        "Train with: python training/train.py --model yolo11n.pt"
     )
 
 
@@ -44,8 +44,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     testing_dir = Path(__file__).resolve().parent
     root = testing_dir.parent
-    parser.add_argument("--model", default="yolo26n",
-                        help="Run name (yolo26n, yolo26s) or a .pt path. Default: yolo26n.")
+    parser.add_argument("--model", default="yolo11n",
+                        help="Run name (yolo11n, yolov8n, yolo26n, yolo26s) or a .pt path. Default: yolo11n.")
     parser.add_argument("--weights", type=Path, default=None,
                         help="Explicit checkpoint path. Overrides --model.")
     parser.add_argument("--source", required=True, help="Image, folder, or video.")

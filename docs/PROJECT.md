@@ -1,14 +1,16 @@
 # Leaf detection project
 
-This project turns `leaf.zip` into a YOLO dataset, checks the boxes, then trains YOLO26 on **COCO128 plus the leaf photos** so the model can detect a leaf.
+This project turns `leaf.zip` into a YOLO dataset, checks the boxes, then trains several Ultralytics YOLO families on **COCO128 plus the leaf photos** so the model can detect a leaf.
 
-Training fine-tunes pretrained **YOLO26** checkpoints from Ultralytics. Two sizes are kept side by side:
+Each family keeps its own run folder. Report numbers are written separately under `results/`.
 
 | Run folder | Base weights | Role |
 | --- | --- | --- |
-| `training/runs/yolo26n/` | `yolo26n.pt` | **2-core / CPU laptop** (nano, ~5 MB) |
-| `training/runs/yolo26s/` | `yolo26s.pt` | Stronger GPU model (~20 MB) |
-| `training/runs/coco128-leaf/` | legacy copy of the s-model | Older clones only |
+| `training/runs/yolo11n/` | `yolo11n.pt` | Best nano leaf score; good on a 2-core CPU |
+| `training/runs/yolo26n/` | `yolo26n.pt` | YOLO26 nano |
+| `training/runs/yolov8n/` | `yolov8n.pt` | Classic YOLOv8 nano |
+| `training/runs/yolo26s/` | `yolo26s.pt` | Stronger YOLO26 small (GPU) |
+| `training/runs/coco128-leaf/` | legacy YOLO26s path | Older clones only |
 
 The labeling step does not use these models.
 
@@ -26,16 +28,19 @@ jupiter/
     combined/coco128/             the 128 COCO images, downloaded once
     combined/coco128_leaf/        the dataset training actually reads
   training/
-    train.py                      fine-tune YOLO26n or YOLO26s
-    runs/yolo26n/                 CPU-friendly checkpoint
-    runs/yolo26s/                 higher-accuracy checkpoint
+    train.py                      fine-tune yolov8n / yolo11n / yolo26n / yolo26s
+    runs/<model>/                 one folder per trained checkpoint
   testing/
     test.py                       scores leaf val and held-out COCO128
     predict.py                    draws boxes on new photos
-    runs/                         test outputs appear here
+    runs/<model>-leaf/            Ultralytics leaf plots per model
+    runs/<model>-coco128/         Ultralytics COCO128 plots per model
+  results/
+    summary.md                    comparison table for the report
+    <model>/metrics.md            one-model write-up
 ```
 
-Dataset work stays inside `dataset/`. Training stays inside `training/`. Testing stays inside `testing/`.
+Dataset work stays inside `dataset/`. Training stays inside `training/`. Testing stays inside `testing/`. Report files stay inside `results/`.
 
 ## 0. Environment
 
@@ -132,8 +137,9 @@ This is **supervised fine-tuning** of a pretrained detector, not training from s
 | Choice | Why it helps |
 | --- | --- |
 | Start from YOLO26 `n` or `s` | Ultralytics already trained both on full COCO. The backbone already knows edges, shapes, and texture. The leaf set is 443 photos, so a medium/large model would memorize the studio paper |
-| Prefer `yolo26n` on weak PCs | Nano is the smallest YOLO26 detector. It is the one meant for a 2-core CPU laptop |
-| Keep `yolo26s` for quality | Small is stronger when a GPU is available. Both checkpoints stay under `training/runs/` |
+| Train nano variants of v8, v11, and v26 | Same data and recipe, separate run folders, so the report can compare families fairly on a weak PC |
+| Prefer `yolo11n` on weak PCs | Currently the strongest leaf score among the nano models, still ~5.5 MB |
+| Keep `yolo26s` for quality | Small is stronger when a GPU is available. All checkpoints stay under `training/runs/` |
 | Leaf as class `80` | Classes `0`–`79` keep the COCO names. Ultralytics remaps the pretrained classification head by name, so the `person` row is not thrown away when `leaf` is added |
 | `--freeze 10` | The early backbone stays as COCO learned it. The neck and head learn the new class |
 | AdamW at `0.001` | A small step. The default COCO learning rate would move the pretrained weights too far on this set |
@@ -145,21 +151,20 @@ The number that says leaf detection worked is the **`leaf` row** from `testing/t
 ### Commands
 
 ```bash
-# Default: nano, for 2-core / CPU use
+python training/train.py --model yolov8n.pt
+python training/train.py --model yolo11n.pt
 python training/train.py --model yolo26n.pt
-
-# Stronger small model
 python training/train.py --model yolo26s.pt
 ```
 
-`train.py` writes each run under `training/runs/<model-stem>/` (`yolo26n`, `yolo26s`).
+`train.py` writes each run under `training/runs/<model-stem>/`.
 
 Typical GPU train flags:
 
 ```bash
 python training/train.py \
   --data dataset/combined/coco128_leaf/data.yaml \
-  --model yolo26n.pt \
+  --model yolo11n.pt \
   --epochs 80 \
   --imgsz 640 \
   --batch 16 \
@@ -170,40 +175,49 @@ Use GPU `0` by default. If the 3060 runs out of memory: `--batch 8`. On a 2-core
 
 ### Measured runs (this machine)
 
-Hardware: NVIDIA GeForce RTX 3060. Stack: Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4. Train rows: 460.
+Hardware: NVIDIA GeForce RTX 3060. Stack: Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4. Train rows: 460. Full report files: [`results/summary.md`](../results/summary.md).
 
-| Model | Checkpoint | Epochs | Leaf val mAP50 | Leaf val mAP50-95 | Notes |
-| --- | --- | --- | --- | --- | --- |
-| **yolo26n** | `training/runs/yolo26n/weights/best.pt` (~5.3 MB) | 21 (best at epoch 1 on mixed val) | **0.817** | **0.514** | Use this on a 2-core laptop |
-| **yolo26s** | `training/runs/yolo26s/weights/best.pt` (~20 MB) | 21 (best at epoch 1 on mixed val) | **0.930** | **0.528** | Stronger boxes when a GPU is available |
+| Model | Checkpoint | Size | Leaf mAP50 | Leaf mAP50-95 | Notes |
+| --- | --- | ---: | ---: | ---: | --- |
+| **yolo11n** | `training/runs/yolo11n/weights/best.pt` | 5.5 MB | **0.980** | **0.813** | Best nano leaf score; use on a 2-core laptop |
+| yolo26s | `training/runs/yolo26s/weights/best.pt` | 20.4 MB | 0.930 | 0.528 | Stronger YOLO26 when a GPU is available |
+| yolo26n | `training/runs/yolo26n/weights/best.pt` | 5.5 MB | 0.817 | 0.514 | YOLO26 nano |
+| yolov8n | `training/runs/yolov8n/weights/best.pt` | 6.5 MB | 0.525 | 0.285 | Classic YOLOv8 nano |
 
 Early stopping watched the mixed COCO+leaf validation score. Leaf-only testing above is the score that matters for this project.
 
-## 5. Test
+## 5. Test and report files
+
+Score one model:
 
 ```bash
-python testing/test.py --model yolo26n
-python testing/test.py --model yolo26s
+python testing/test.py --model yolo11n
 ```
 
-Each call scores that checkpoint on leaf val and held-out COCO128:
+Rebuild every report folder at once (writes `results/<model>/` plus `results/summary.md`):
 
-| Model | Leaf val (85) | Held-out COCO128 (26) |
-| --- | --- | --- |
-| yolo26n | precision 0.706, recall 0.906, **mAP50 0.817**, **mAP50-95 0.514** | mAP50 0.457, mAP50-95 0.266 |
-| yolo26s | precision 0.893, recall 0.879, **mAP50 0.930**, **mAP50-95 0.528** | mAP50 0.484, mAP50-95 0.260 |
+```bash
+python results/evaluate_models.py
+```
 
-The leaf row is the leaf-detection result. The COCO128 score only shows whether the original classes still fire on images the trainer did not use.
+| Model | Leaf val (85) | Held-out COCO128 (26) | Report folder |
+| --- | --- | --- | --- |
+| yolo11n | P 0.987, R 0.965, **mAP50 0.980**, **mAP50-95 0.813** | mAP50 0.298 | `results/yolo11n/` |
+| yolo26s | P 0.893, R 0.879, **mAP50 0.930**, **mAP50-95 0.528** | mAP50 0.484 | `results/yolo26s/` |
+| yolo26n | P 0.706, R 0.906, **mAP50 0.817**, **mAP50-95 0.514** | mAP50 0.457 | `results/yolo26n/` |
+| yolov8n | P 0.462, R 0.906, **mAP50 0.525**, **mAP50-95 0.285** | mAP50 0.354 | `results/yolov8n/` |
+
+The leaf row is the leaf-detection result. The COCO128 score only shows whether the original classes still fire on images the trainer did not use. Ultralytics plots stay under `testing/runs/<model>-leaf/` and `testing/runs/<model>-coco128/`.
 
 ### Predict on a 2-core laptop
 
 ```bash
-python testing/predict.py --model yolo26n --device cpu --imgsz 416 --source path/to/photo.jpg
+python testing/predict.py --model yolo11n --device cpu --imgsz 416 --source path/to/photo.jpg
 ```
 
-Defaults already prefer `yolo26n`, `cpu`, and `imgsz=416`. Boxed images go to `testing/runs/predict/yolo26n/`. The leaf class is class **80** and prints as `leaf`.
+Defaults prefer `yolo11n`, `cpu`, and `imgsz=416`. Boxed images go to `testing/runs/predict/yolo11n/`. The leaf class is class **80** and prints as `leaf`.
 
-On GPU, prefer the stronger model:
+On GPU, the larger YOLO26 small model is still available:
 
 ```bash
 python testing/predict.py --model yolo26s --device 0 --imgsz 640 --source path/to/photo.jpg
