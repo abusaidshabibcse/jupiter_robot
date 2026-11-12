@@ -28,14 +28,22 @@ jupiter/
 
 Dataset work stays inside `dataset/`. Training stays inside `training/`. Testing stays inside `testing/`.
 
-## 1. Label the zip
+## 0. Environment
 
-From the project root, with the virtual environment active:
+Use Python 3.12. System Python 3.14 does not have a reliable PyTorch wheel for this stack.
 
 ```bash
-python3 -m venv .venv
+uv venv --python 3.12 .venv
 source .venv/bin/activate
-pip install -U -r requirements.txt
+uv pip install -U -r requirements.txt
+```
+
+Training needs a free GPU. If a local LLM is holding the card, stop it first, then confirm with `nvidia-smi`.
+
+## 1. Label the zip
+
+```bash
+source .venv/bin/activate
 python dataset/labeling/label_from_zip.py
 ```
 
@@ -98,14 +106,32 @@ python dataset/combined/build_coco128_leaf.py
 
 The first run downloads COCO128 (128 images, about 7 MB) into `dataset/combined/coco128/`. The script then builds `dataset/combined/coco128_leaf/`:
 
+- Leaf photos are **copied** into `coco128_leaf/images/`. Symlinks are not used. Ultralytics resolves a symlink to the real leaf path and then reads the leaf-only labels next to that path, which still say class `0`. In the 81-class set, class `0` is `person`. A real copy keeps training on the rewritten class-`80` labels.
 - Leaf boxes are rewritten from class `0` to class **`80`**. Classes `0`–`79` stay the COCO names, so a COCO label such as `person` is not overwritten by `leaf`.
-- 80% of COCO128 is listed in `train.txt` together with the leaf training photos.
-- 20% of COCO128 is held out, and the leaf validation photos are held out. Those are what testing uses.
+- 80% of COCO128 is listed in `train.txt` together with the leaf training photos (102 COCO + 358 leaf = 460 train rows).
+- 20% of COCO128 is held out (26 photos), and the leaf validation photos are held out (85 photos). Those are what testing uses.
 - `data.yaml` is the file `training/train.py` reads. It has 81 names. The last one is `leaf`.
 
 COCO128 is a small slice of COCO. It is the set this project trains on, as requested. It is large enough to run the combined pipeline on one machine. It is not large enough to make the 80 COCO classes reliable after fine-tuning. The class this run is built to learn is **leaf**.
 
 ## 4. Train
+
+### Technique
+
+This is **supervised fine-tuning** of a pretrained detector, not training from scratch.
+
+| Choice | Why it helps |
+| --- | --- |
+| Start from `yolo26s.pt` | Ultralytics already trained it on full COCO. The backbone already knows edges, shapes, and texture. The leaf set is 443 photos, so a larger model would memorize the studio paper |
+| Leaf as class `80` | Classes `0`–`79` keep the COCO names. Ultralytics remaps the pretrained classification head by name, so the `person` row is not thrown away when `leaf` is added |
+| `--freeze 10` | The early backbone stays as COCO learned it. The neck and head learn the new class |
+| AdamW at `0.001` | A small step. The default COCO learning rate would move the pretrained weights too far on this set |
+| Mild augmentation | Rotate up to 10°, vertical flip 0.2, horizontal flip 0.5, mosaic 0.8, mosaic off for the last 10 epochs. The photos are one leaf on colored paper, so heavy augmentation would invent scenes this set does not contain |
+| Early stop, patience 20 | Stops when the mixed validation mAP50-95 has not improved for 20 epochs. `best.pt` is that best epoch, not the last epoch |
+
+The number that says leaf detection worked is the **`leaf` row** from `testing/test.py`, not the mixed `all` row during training. The mixed validation set mixes held-out COCO128 with leaf photos, so COCO class noise can stop training early even when leaf is already strong.
+
+### Command
 
 ```bash
 python training/train.py
@@ -124,13 +150,7 @@ python training/train.py \
   --name coco128-leaf
 ```
 
-| Setting | Why |
-| --- | --- |
-| `yolo26s.pt` | Smallest model that still has strong COCO features. 443 leaf photos will overfit a larger model |
-| `--freeze 10` | The backbone stays as COCO learned it. The head learns the leaf class |
-| `AdamW`, learning rate `0.001` | A small fine-tune. The default COCO learning rate is too high here |
-| 80 epochs, patience 20 | Stops when validation has not improved for 20 epochs |
-| device | GPU `0` by default. If you have no GPU: `--device cpu --batch 8` |
+Use GPU `0` by default. If the 3060 runs out of memory: `--batch 8`. If you have no GPU: `--device cpu --batch 8`.
 
 Weights and the curve are written to:
 
@@ -139,7 +159,17 @@ training/runs/coco128-leaf/weights/best.pt
 training/runs/coco128-leaf/results.csv
 ```
 
-`best.pt` is the epoch with the highest validation mAP50-95. That is the file testing uses.
+### Measured run (this machine)
+
+| Item | Value |
+| --- | --- |
+| Hardware | NVIDIA GeForce RTX 3060, 12 GB |
+| Stack | Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4 |
+| Train rows | 460 (102 COCO128 + 358 leaf) |
+| Epochs run | 21 (early stop; best checkpoint at epoch 1 on mixed val mAP50-95) |
+| Checkpoint | `training/runs/coco128-leaf/weights/best.pt` |
+
+Early stopping watched the mixed COCO+leaf validation score. Epoch 1 had the best mixed mAP50-95, so that checkpoint was kept. Leaf-only testing below is the score that matters for this project.
 
 ## 5. Test
 
@@ -149,10 +179,12 @@ python testing/test.py
 
 This scores `best.pt` twice and writes both runs under `testing/runs/`:
 
-| Run | Data | What a good result means |
+| Run | Data | Measured result |
 | --- | --- | --- |
-| `testing/runs/leaf/` | the 85 leaf validation photos | The row named `leaf` is high. This is the leaf-detection result |
-| `testing/runs/coco128/` | the held-out COCO128 photos | The original COCO classes on images the trainer did not use |
+| `testing/runs/leaf/` | 85 leaf validation photos | **leaf** precision 0.893, recall 0.879, **mAP50 0.930**, **mAP50-95 0.528** |
+| `testing/runs/coco128/` | 26 held-out COCO128 photos | all-class mAP50 0.484, mAP50-95 0.260 |
+
+The leaf row is the leaf-detection result. The COCO128 score only shows whether the original classes still fire on images the trainer did not use. COCO128 is too small to make those 80 classes reliable after this fine-tune.
 
 To draw boxes on a new photo:
 
@@ -160,7 +192,7 @@ To draw boxes on a new photo:
 python testing/predict.py --source path/to/photo.jpg
 ```
 
-Boxed images go to `testing/runs/predict/`. The leaf class is class 80 in this checkpoint, and the printed name is `leaf`.
+Boxed images go to `testing/runs/predict/`. The leaf class is class **80** in this checkpoint, and the printed name is `leaf`. A check on a held-out Quercus photo predicted `leaf` with confidence about 0.9.
 
 ## Order of commands
 
@@ -174,4 +206,4 @@ python testing/test.py
 python testing/predict.py --source path/to/photo.jpg
 ```
 
-Run the check before the build. If the check fails, fix the labels and run the check again. Then rebuild the combined dataset so class 80 stays in sync with the leaf labels.
+Run the check before the build. If the check fails, fix the labels and run the check again. Then rebuild the combined dataset so class 80 stays in sync with the leaf labels. Rebuild also recopies the leaf photos, which is required after any labeling change.

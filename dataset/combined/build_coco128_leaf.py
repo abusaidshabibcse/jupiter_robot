@@ -66,14 +66,19 @@ def rewrite_leaf_label(src: Path, dest: Path) -> None:
     dest.write_text("\n".join(lines) + "\n")
 
 
-def link_or_copy(src: Path, dest: Path) -> None:
+def copy_image(src: Path, dest: Path) -> None:
+    """Copy the photo into the combined set.
+
+    Symlinks are not used. Ultralytics resolves a symlink to the real
+    image path and then looks for labels next to that real file. The
+    leaf-only labels still say class 0, which is "person" in this
+    81-class set. A real copy keeps the trainer on the rewritten
+    class-80 labels under coco128_leaf/labels/.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     if dest.exists() or dest.is_symlink():
         dest.unlink()
-    try:
-        dest.symlink_to(src.resolve())
-    except OSError:
-        shutil.copy2(src, dest)
+    shutil.copy2(src, dest)
 
 
 def yaml_names() -> str:
@@ -121,7 +126,7 @@ def main() -> None:
             label_src = LEAF / "labels" / split / f"{image_path.stem}.txt"
             if not label_src.exists():
                 raise SystemExit(f"Missing label for {image_path.name}")
-            link_or_copy(image_path, OUT / "images" / split / image_path.name)
+            copy_image(image_path, OUT / "images" / split / image_path.name)
             rewrite_leaf_label(label_src, OUT / "labels" / split / f"{image_path.stem}.txt")
 
     leaf_train_rows = [str((OUT / "images" / "train" / path.name).resolve()) for path in leaf_train]
