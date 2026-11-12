@@ -4,23 +4,26 @@ Fine-tune a COCO-pretrained YOLO26 checkpoint on `dataset/combined/coco128_leaf/
 
 ## Models
 
-| Run folder | Checkpoint | Best for | Size |
-| --- | --- | --- | --- |
-| `runs/yolo26n/` | `yolo26n.pt` → `weights/best.pt` | **2-core / CPU laptop** | ~5 MB class |
-| `runs/yolo26s/` | `yolo26s.pt` → `weights/best.pt` | GPU / better boxes | ~20 MB |
-| `runs/coco128-leaf/` | legacy alias of the s-model | older docs/clones | ~20 MB |
+Each family gets its own run folder under `training/runs/<name>/weights/best.pt`.
 
-`yolo26n` is the nano YOLO26 model. It is the lightest current Ultralytics YOLO26 detector and the one meant for a weak CPU. `yolo26s` is kept for higher accuracy when a GPU is available.
+| Run folder | Base weights | Best for |
+| --- | --- | --- |
+| `yolov8n/` | `yolov8n.pt` | Classic YOLOv8 nano (CPU-friendly) |
+| `yolo11n/` | `yolo11n.pt` | YOLO11 nano (CPU-friendly) |
+| `yolo26n/` | `yolo26n.pt` | YOLO26 nano (CPU-friendly default) |
+| `yolo26s/` | `yolo26s.pt` | YOLO26 small (stronger GPU model) |
+| `coco128-leaf/` | legacy YOLO26s path | older clones |
+
+Report-ready numbers for every model are under [`../results/`](../results/).
 
 ## Commands
 
 ```bash
 source .venv/bin/activate
 
-# CPU-friendly nano (default)
+python training/train.py --model yolov8n.pt
+python training/train.py --model yolo11n.pt
 python training/train.py --model yolo26n.pt
-
-# Stronger small model
 python training/train.py --model yolo26s.pt
 ```
 

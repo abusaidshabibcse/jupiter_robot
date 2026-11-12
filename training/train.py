@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """Fine-tune a pretrained YOLO checkpoint on the COCO128 + leaf dataset.
 
-    # Quality model (larger, better boxes)
+    python training/train.py --model yolov8n.pt
+    python training/train.py --model yolo11n.pt
+    python training/train.py --model yolo26n.pt
     python training/train.py --model yolo26s.pt
 
-    # CPU / 2-core friendly model (nano)
-    python training/train.py --model yolo26n.pt
-
 Weights land under training/runs/<name>/weights/best.pt.
-The default run name is the model stem (yolo26s, yolo26n, ...).
+The default run name is the model stem (yolov8n, yolo11n, yolo26n, yolo26s).
 """
 
 from __future__ import annotations
@@ -22,8 +21,8 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser.add_argument("--data", type=Path,
                         default=root / "dataset" / "combined" / "coco128_leaf" / "data.yaml")
-    parser.add_argument("--model", default="yolo26n.pt",
-                        help="Pretrained Ultralytics checkpoint. yolo26n is for 2-core/CPU; yolo26s is stronger.")
+    parser.add_argument("--model", default="yolo11n.pt",
+                        help="Pretrained Ultralytics checkpoint (yolov8n, yolo11n, yolo26n, yolo26s).")
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)

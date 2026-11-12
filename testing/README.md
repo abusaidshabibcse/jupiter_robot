@@ -3,24 +3,29 @@
 ```bash
 source .venv/bin/activate
 
-# 2-core / CPU laptop (nano, default)
-python testing/predict.py --model yolo26n --device cpu --imgsz 416 --source photo.jpg
+# Recommended on a 2-core / CPU laptop
+python testing/predict.py --model yolo11n --device cpu --imgsz 416 --source photo.jpg
 
-# Stronger GPU model
+# Other trained models
+python testing/predict.py --model yolov8n --device cpu --imgsz 416 --source photo.jpg
+python testing/predict.py --model yolo26n --device cpu --imgsz 416 --source photo.jpg
 python testing/predict.py --model yolo26s --device 0 --imgsz 640 --source photo.jpg
 
 # Score held-out sets (needs local dataset images)
-python testing/test.py --model yolo26n
-python testing/test.py --model yolo26s
+python testing/test.py --model yolo11n
+python results/evaluate_models.py
 ```
 
-`predict.py` saves boxed images under `testing/runs/predict/<model>/`. The leaf class is class **80** and prints as `leaf`.
+`predict.py` saves boxed images under `testing/runs/predict/<model>/`.
+`evaluate_models.py` writes report files under `results/<model>/` plus `results/summary.md`.
 
-## Measured leaf scores
+## Leaf validation scores
 
-| Model | Weights | mAP50 | mAP50-95 | Use |
-| --- | --- | --- | --- | --- |
-| yolo26n | `training/runs/yolo26n/weights/best.pt` | 0.817 | 0.514 | 2-core / CPU |
-| yolo26s | `training/runs/yolo26s/weights/best.pt` | 0.930 | 0.528 | GPU / quality |
+| Model | mAP50 | mAP50-95 | Size |
+| --- | ---: | ---: | ---: |
+| yolo11n | 0.980 | 0.813 | 5.5 MB |
+| yolo26s | 0.930 | 0.528 | 20.4 MB |
+| yolo26n | 0.817 | 0.514 | 5.5 MB |
+| yolov8n | 0.525 | 0.285 | 6.5 MB |
 
-Details: [../docs/PROJECT.md](../docs/PROJECT.md).
+Full tables: [../results/summary.md](../results/summary.md).

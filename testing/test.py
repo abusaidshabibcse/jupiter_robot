@@ -28,13 +28,13 @@ def resolve_weights(root: Path, model: str | None, weights: Path | None) -> Path
             f"Train first with: python training/train.py --model {model}.pt"
         )
     # Prefer the CPU-friendly nano if present, else the small model.
-    for name in ("yolo26n", "yolo26s", "coco128-leaf"):
+    for name in ("yolo11n", "yolo26n", "yolov8n", "yolo26s", "coco128-leaf"):
         candidate = root / "training" / "runs" / name / "weights" / "best.pt"
         if candidate.is_file():
             return candidate
     raise SystemExit(
         "No trained weights found under training/runs/.\n"
-        "Train with: python training/train.py --model yolo26n.pt"
+        "Train with: python training/train.py --model yolo11n.pt"
     )
 
 

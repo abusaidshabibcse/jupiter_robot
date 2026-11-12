@@ -1,0 +1,24 @@
+{
+  "model": "yolo26s",
+  "weights": "training/runs/yolo26s/weights/best.pt",
+  "weights_mb": 20.42,
+  "imgsz": 640,
+  "device": "0",
+  "evaluated_at": "2026-11-12T14:45:59.309828+00:00",
+  "leaf": {
+    "precision": 0.892534324632238,
+    "recall": 0.879410864491455,
+    "map50": 0.9299990257742147,
+    "map50_95": 0.5282780522394066
+  },
+  "coco128": {
+    "precision": 0.5230051539077387,
+    "recall": 0.4471853801126255,
+    "map50": 0.48434007256188294,
+    "map50_95": 0.25954222400756993
+  },
+  "testing_runs": {
+    "leaf": "testing/runs/yolo26s-leaf",
+    "coco128": "testing/runs/yolo26s-coco128"
+  }
+}
