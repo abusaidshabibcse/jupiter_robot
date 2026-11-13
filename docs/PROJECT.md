@@ -1,8 +1,19 @@
 # Leaf detection project
 
-This project turns `leaf.zip` into a YOLO dataset, checks the boxes, then trains YOLO26 on **COCO128 plus the leaf photos** so the model can detect a leaf.
+This project turns `leaf.zip` into a YOLO dataset, checks the boxes, then fine-tunes YOLOv8, YOLO11, and YOLO26 in the **s** and **m** sizes on **COCO128 plus the leaf photos**. The six runs share one recipe, so the scores compare the architectures.
 
-The training model is **YOLO26s** (`yolo26s.pt`). Ultralytics already trained that file on the full COCO dataset. This project fine-tunes it. The labeling step does not use that model.
+Each checkpoint keeps its own run folder. Ultralytics weight names (YOLO11 has no `v` in the filename):
+
+| Run folder | Base weights |
+| --- | --- |
+| `training/runs/yolov8s/` | `yolov8s.pt` |
+| `training/runs/yolov8m/` | `yolov8m.pt` |
+| `training/runs/yolo11s/` | `yolo11s.pt` |
+| `training/runs/yolo11m/` | `yolo11m.pt` |
+| `training/runs/yolo26s/` | `yolo26s.pt` |
+| `training/runs/yolo26m/` | `yolo26m.pt` |
+
+No nano, large, or extra-large sizes. No other YOLO generations. The labeling step does not use these models.
 
 ## Folders
 
@@ -18,15 +29,19 @@ jupiter/
     combined/coco128/             the 128 COCO images, downloaded once
     combined/coco128_leaf/        the dataset training actually reads
   training/
-    train.py                      fine-tune YOLO26s
-    runs/                         logs and weights appear here after training
+    train.py                      fine-tune the six s and m checkpoints
+    runs/<model>/                 one folder per trained checkpoint
   testing/
     test.py                       scores leaf val and held-out COCO128
     predict.py                    draws boxes on new photos
-    runs/                         test outputs appear here
+    runs/<model>/leaf             Ultralytics leaf plots per model
+    runs/<model>/coco128          Ultralytics COCO128 plots per model
+  results/
+    summary.md                    comparison table for the report
+    <model>/metrics.md            one-model write-up
 ```
 
-Dataset work stays inside `dataset/`. Training stays inside `training/`. Testing stays inside `testing/`.
+Dataset work stays inside `dataset/`. Training stays inside `training/`. Testing stays inside `testing/`. Report files stay inside `results/`.
 
 ## 0. Environment
 
@@ -82,7 +97,7 @@ MobileSAM is available if you want a neural model on the photos that have no mas
 python dataset/labeling/label_from_zip.py --method sam --sam-weights mobile_sam.pt
 ```
 
-YOLO26 is the **training** model, used in the next sections. It is not the labeler.
+The six YOLO checkpoints are the **training** models, used in the next sections. They are not the labeler.
 
 ## 2. Check that labeling worked
 
@@ -118,81 +133,79 @@ COCO128 is a small slice of COCO. It is the set this project trains on, as reque
 
 ### Technique
 
-This is **supervised fine-tuning** of a pretrained detector, not training from scratch.
+This is **supervised fine-tuning** of a pretrained detector, not training from scratch. Every checkpoint uses the same settings, so a higher score means that architecture fit this set better.
 
 | Choice | Why it helps |
 | --- | --- |
-| Start from `yolo26s.pt` | Ultralytics already trained it on full COCO. The backbone already knows edges, shapes, and texture. The leaf set is 443 photos, so a larger model would memorize the studio paper |
+| YOLOv8, YOLO11, and YOLO26, sizes s and m | Ultralytics already trained each checkpoint on full COCO. The backbone already knows edges, shapes, and texture. Separate run folders keep the comparison fair |
 | Leaf as class `80` | Classes `0`–`79` keep the COCO names. Ultralytics remaps the pretrained classification head by name, so the `person` row is not thrown away when `leaf` is added |
 | `--freeze 10` | The early backbone stays as COCO learned it. The neck and head learn the new class |
 | AdamW at `0.001` | A small step. The default COCO learning rate would move the pretrained weights too far on this set |
+| 80 epochs, patience 20, image size 640, batch 16 | Same budget for every run. On the 12 GB GPU, an m model that runs out of memory is trained again at batch 8, and that batch is noted in the results table |
 | Mild augmentation | Rotate up to 10°, vertical flip 0.2, horizontal flip 0.5, mosaic 0.8, mosaic off for the last 10 epochs. The photos are one leaf on colored paper, so heavy augmentation would invent scenes this set does not contain |
 | Early stop, patience 20 | Stops when the mixed validation mAP50-95 has not improved for 20 epochs. `best.pt` is that best epoch, not the last epoch |
 
 The number that says leaf detection worked is the **`leaf` row** from `testing/test.py`, not the mixed `all` row during training. The mixed validation set mixes held-out COCO128 with leaf photos, so COCO class noise can stop training early even when leaf is already strong.
 
-### Command
+### Commands
 
 ```bash
 python training/train.py
 ```
 
-That is the same as:
+That one command trains the six checkpoints and refuses a `.yaml` or any other model name. Weights land in:
+
+- `training/runs/yolov8s/`, `training/runs/yolov8m/`
+- `training/runs/yolo11s/`, `training/runs/yolo11m/`
+- `training/runs/yolo26s/`, `training/runs/yolo26m/`
+
+To repeat a single checkpoint, pass its name:
 
 ```bash
-python training/train.py \
-  --data dataset/combined/coco128_leaf/data.yaml \
-  --model yolo26s.pt \
-  --epochs 80 \
-  --imgsz 640 \
-  --batch 16 \
-  --freeze 10 \
-  --name coco128-leaf
+python training/train.py --model yolo26m.pt
 ```
 
-Use GPU `0` by default. If the 3060 runs out of memory: `--batch 8`. If you have no GPU: `--device cpu --batch 8`.
+Use GPU `0` by default. If an m model runs out of memory on the 12 GB GPU, `train.py` retries that model at batch 8. The same retry by hand is:
 
-Weights and the curve are written to:
-
-```
-training/runs/coco128-leaf/weights/best.pt
-training/runs/coco128-leaf/results.csv
+```bash
+python training/train.py --model yolov8m.pt --batch 8
 ```
 
-### Measured run (this machine)
+### Measured runs (this machine)
 
-| Item | Value |
-| --- | --- |
-| Hardware | NVIDIA GeForce RTX 3060, 12 GB |
-| Stack | Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4 |
-| Train rows | 460 (102 COCO128 + 358 leaf) |
-| Epochs run | 21 (early stop; best checkpoint at epoch 1 on mixed val mAP50-95) |
-| Checkpoint | `training/runs/coco128-leaf/weights/best.pt` |
+Hardware: NVIDIA GeForce RTX 3060 (12 GB). Stack: Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4. Train rows: 460. Recipe: freeze 10, AdamW `0.001`, 80 epochs, patience 20, image size 640, batch 16 unless a row notes otherwise. The leaf columns are the performance numbers for this project.
 
-Early stopping watched the mixed COCO+leaf validation score. Epoch 1 had the best mixed mAP50-95, so that checkpoint was kept. Leaf-only testing below is the score that matters for this project.
+| Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| yolov8s | 0.988 | 0.972 | 0.983 | 0.741 | 0.334 | 0.183 |
+| yolov8m | 0.996 | 0.988 | 0.993 | 0.814 | 0.319 | 0.183 |
+| yolo11s | 0.977 | 0.991 | 0.994 | 0.872 | 0.265 | 0.174 |
+| yolo11m | 0.967 | 0.918 | 0.973 | 0.817 | 0.278 | 0.150 |
+| yolo26s | 0.893 | 0.879 | 0.930 | 0.528 | 0.484 | 0.260 |
+| yolo26m | 0.963 | 0.988 | 0.992 | 0.753 | 0.359 | 0.199 |
 
-## 5. Test
+All six finished at batch 16.
+
+Early stopping watched the mixed COCO+leaf validation score. Leaf-only testing above is the score that matters for this project. Full per-model write-ups: [`results/summary.md`](../results/summary.md).
+
+## 5. Test and predict
+
+Score all six checkpoints:
 
 ```bash
 python testing/test.py
 ```
 
-This scores `best.pt` twice and writes both runs under `testing/runs/`:
+Each `weights/best.pt` is scored on the 85 leaf validation photos and on the 26 held-out COCO128 photos. Plots go to `testing/runs/<model>/leaf` and `testing/runs/<model>/coco128`, so the six runs do not overwrite each other. The table in section 4 is that measurement.
 
-| Run | Data | Measured result |
-| --- | --- | --- |
-| `testing/runs/leaf/` | 85 leaf validation photos | **leaf** precision 0.893, recall 0.879, **mAP50 0.930**, **mAP50-95 0.528** |
-| `testing/runs/coco128/` | 26 held-out COCO128 photos | all-class mAP50 0.484, mAP50-95 0.260 |
-
-The leaf row is the leaf-detection result. The COCO128 score only shows whether the original classes still fire on images the trainer did not use. COCO128 is too small to make those 80 classes reliable after this fine-tune.
-
-To draw boxes on a new photo:
+`predict.py` draws boxes for one checkpoint. The default weights are `training/runs/yolo26s/weights/best.pt`. `--model` accepts any of the six `best.pt` files.
 
 ```bash
 python testing/predict.py --source path/to/photo.jpg
+python testing/predict.py --model yolov8m --source path/to/photo.jpg
 ```
 
-Boxed images go to `testing/runs/predict/`. The leaf class is class **80** in this checkpoint, and the printed name is `leaf`. A check on a held-out Quercus photo predicted `leaf` with confidence about 0.9.
+Boxed images go to `testing/runs/predict/<model>/`. The leaf class is class **80** and prints as `leaf`.
 
 ## Order of commands
 
