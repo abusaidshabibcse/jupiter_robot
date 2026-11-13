@@ -1,0 +1,18 @@
+# yolo26s. The small head tightens boxes slowly, and the mixed COCO+leaf
+# score peaks at epoch 1 while leaf mAP50-95 is still about 0.53. This run
+# is longer, and best.pt is chosen on the leaf photos.
+epochs: 100
+patience: 40
+batch: 16
+imgsz: 640
+freeze: 10
+lr0: 0.001
+lrf: 0.01
+warmup_epochs: 2
+weight_decay: 0.0005
+degrees: 10
+flipud: 0.2
+fliplr: 0.5
+mosaic: 0.6
+close_mosaic: 20
+val: leaf

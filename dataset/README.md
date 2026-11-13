@@ -5,6 +5,7 @@
 | `raw/leaf.zip` | Original archive |
 | `raw/leaf/` | Unzipped photos, masks, and `leaf.csv` |
 | `labeling/label_from_zip.py` | Build YOLO boxes from the zip |
+| `labeling/relabel_with_teacher.py` | Hybrid refine: keep BW masks; re-label others with SAM2.1-L (+ YOLO/color fallback) |
 | `labeling/check_labels.py` | Confirm every photo has one valid box |
 | `labeled/leaf/` | Images, labels, previews, and `LABEL_CHECK.txt` |
 | `combined/coco128/` | Downloaded COCO128 |

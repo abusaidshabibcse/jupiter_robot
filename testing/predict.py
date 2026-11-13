@@ -2,11 +2,10 @@
 """Draw detections and save the images under testing/runs/predict/.
 
     python testing/predict.py --source photo.jpg
-    python testing/predict.py --model yolov8m --source photo.jpg
+    python testing/predict.py --model yolo26m --source photo.jpg
 
 The default weights are training/runs/yolo26s/weights/best.pt.
---model accepts any of the six fine-tuned best.pt files:
-yolov8s, yolov8m, yolo11s, yolo11m, yolo26s, yolo26m.
+--model accepts yolo26s or yolo26m (or that run's best.pt path).
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
-ALLOWED = ("yolov8s", "yolov8m", "yolo11s", "yolo11m", "yolo26s", "yolo26m")
+ALLOWED = ("yolo26s", "yolo26m")
 
 
 def allowed_list() -> str:
