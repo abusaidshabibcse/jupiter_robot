@@ -5,12 +5,12 @@ Dataset work, training, testing, and report results each have their own folder.
 | Folder | What is in it |
 | --- | --- |
 | `dataset/` | The zip, the labels, the label check, and the COCO128 + leaf training set |
-| `training/` | Fine-tune YOLO26 s and m with separate recipes. Weights go in `training/runs/<model>/` |
-| `testing/` | Score held-out photos and draw boxes |
-| `results/` | Per-model metrics for the report (`summary.md`, `<model>/metrics.md`) |
-| `docs/PROJECT.md` | Full procedure, technique, and scores |
+| `training/` | Fine-tune YOLO26s. Weights go in `training/runs/` |
+| `testing/` | Score the held-out photos and draw boxes on new ones |
+| `docs/PROJECT.md` | Labeling through training and testing, including the technique and scores |
+| `docs/LEARNING.md` | What YOLO is, why the sizes differ, how to read the scores, and how to experiment |
 
-Start with [docs/PROJECT.md](docs/PROJECT.md).
+Start with [docs/PROJECT.md](docs/PROJECT.md). For the ideas behind those steps, read [docs/LEARNING.md](docs/LEARNING.md).
 
 ## Models
 
