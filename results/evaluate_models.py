@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score the six s/m checkpoints. Same entry point as testing/test.py.
+"""Score the YOLO26 s/m checkpoints. Same entry point as testing/test.py.
 
     python results/evaluate_models.py
     python testing/test.py

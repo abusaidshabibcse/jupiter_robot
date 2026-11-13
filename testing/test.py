@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Score the six fine-tuned checkpoints on leaf val and held-out COCO128.
+"""Score the fine-tuned YOLO26 checkpoints on leaf val and held-out COCO128.
 
     python testing/test.py
-    python testing/test.py --model yolo26s yolov8m
+    python testing/test.py --model yolo26s yolo26m
 
 Leaf score is the number that says whether leaf detection worked.
 The COCO128 score uses the 20% of COCO128 that was kept out of training.
 Results are written under testing/runs/<model>/leaf and testing/runs/<model>/coco128
-so the six runs do not overwrite each other.
+so the runs do not overwrite each other.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-ALLOWED = ("yolov8s", "yolov8m", "yolo11s", "yolo11m", "yolo26s", "yolo26m")
+ALLOWED = ("yolo26s", "yolo26m")
 
 
 def allowed_list() -> str:
@@ -93,7 +93,7 @@ def score_one(root: Path, model_name: str, device: str, imgsz: int) -> dict:
     if not weights.is_file():
         raise SystemExit(
             f"Weights not found for model '{model_name}': {weights}\n"
-            "Train first with: python training/train.py"
+            "Train first with: python training/train_yolo26s.py or train_yolo26m.py"
         )
 
     leaf_yaml = root / "dataset" / "combined" / "coco128_leaf" / "leaf_val.yaml"
@@ -267,9 +267,9 @@ def main() -> None:
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", nargs="*", default=None,
-                        help=f"Subset to score. Default: all six ({allowed_list()}).")
+                        help=f"Subset to score. Default: both ({allowed_list()}).")
     parser.add_argument("--weights", type=Path, default=None,
-                        help="One of the six training/runs/<model>/weights/best.pt files.")
+                        help="One of the training/runs/<model>/weights/best.pt files.")
     parser.add_argument("--device", default="0")
     parser.add_argument("--imgsz", type=int, default=640)
     args = parser.parse_args()

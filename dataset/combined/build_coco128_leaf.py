@@ -156,11 +156,21 @@ def main() -> None:
     (OUT / "coco128_val.yaml").write_text(
         f"path: {OUT.resolve()}\ntrain: coco128_val.txt\nval: coco128_val.txt\n\n" + names
     )
+    # Same train as data.yaml; val is leaf-only so best.pt follows leaf detection.
+    (OUT / "train_leaf_val.yaml").write_text(
+        "# Same train list as data.yaml. Validation is the held-out leaf photos,\n"
+        "# so best.pt follows leaf detection instead of the mixed 81-class score.\n"
+        f"path: {OUT.resolve()}\n"
+        "train: train.txt\n"
+        "val: leaf_val.txt\n\n"
+        + names
+    )
 
     print(f"COCO128 train/held-out : {len(coco_train)} / {len(coco_val)}")
     print(f"Leaf train/val         : {len(leaf_train)} / {len(leaf_val)}")
     print(f"Train list rows        : {len(train_rows)}")
     print(f"Train yaml             : {OUT / 'data.yaml'}")
+    print(f"Leaf-val train yaml    : {OUT / 'train_leaf_val.yaml'}")
 
 
 if __name__ == "__main__":

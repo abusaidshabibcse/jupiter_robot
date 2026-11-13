@@ -3,19 +3,19 @@
 | Item | Value |
 | --- | --- |
 | Weights | `training/runs/yolo26m/weights/best.pt` |
-| Size | 44.25 MB |
+| Size | 44.26 MB |
 | Image size | 640 |
 | Device | 0 |
-| Evaluated | 2026-11-12T15:36:42.249749+00:00 |
+| Evaluated | 2026-11-13T03:45:19.059198+00:00 |
 
 ## Leaf validation (85 photos)
 
 | Metric | Value |
 | --- | --- |
-| Precision | 0.9627 |
-| Recall | 0.9882 |
-| mAP50 | 0.9925 |
-| mAP50-95 | 0.7531 |
+| Precision | 0.9976 |
+| Recall | 1.0000 |
+| mAP50 | 0.9950 |
+| mAP50-95 | 0.9365 |
 
 Ultralytics plots: `testing/runs/yolo26m/leaf`
 
@@ -23,9 +23,9 @@ Ultralytics plots: `testing/runs/yolo26m/leaf`
 
 | Metric | Value |
 | --- | --- |
-| Precision | 0.5189 |
-| Recall | 0.3142 |
-| mAP50 | 0.3585 |
-| mAP50-95 | 0.1987 |
+| Precision | 0.6301 |
+| Recall | 0.2812 |
+| mAP50 | 0.3286 |
+| mAP50-95 | 0.2040 |
 
 Ultralytics plots: `testing/runs/yolo26m/coco128`
