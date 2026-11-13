@@ -1,0 +1,25 @@
+{
+  "model": "yolov8s",
+  "weights": "training/runs/yolov8s/weights/best.pt",
+  "weights_mb": 22.57,
+  "batch": 16,
+  "imgsz": 640,
+  "device": "0",
+  "evaluated_at": "2026-11-12T15:36:15.777489+00:00",
+  "leaf": {
+    "precision": 0.9880414344254633,
+    "recall": 0.9720574213450575,
+    "map50": 0.983416149068323,
+    "map50_95": 0.7408429682197849
+  },
+  "coco128": {
+    "precision": 0.5858257755247709,
+    "recall": 0.26432264781059633,
+    "map50": 0.33371426180773117,
+    "map50_95": 0.18323381536995728
+  },
+  "testing_runs": {
+    "leaf": "testing/runs/yolov8s/leaf",
+    "coco128": "testing/runs/yolov8s/coco128"
+  }
+}
