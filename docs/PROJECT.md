@@ -95,7 +95,7 @@ Separate recipes:
 | Model | Spec highlights |
 | --- | --- |
 | `yolo26s` | 100 epochs, patience 40, lr0 `0.001`, mosaic 0.6 |
-| `yolo26m` | 80 epochs, patience 30, lr0 `0.0004`, weight decay `0.001`, mosaic 0.4 |
+| `yolo26m` | 100 epochs, patience 45, lr0 `0.0006`, freeze 8, mosaic 0.5 |
 
 ```bash
 python training/train_yolo26s.py
@@ -104,14 +104,16 @@ python training/train_yolo26m.py
 
 If `yolo26m` OOMs, it retries at batch 8 (or pass `--batch 8`).
 
-### Baseline before hybrid relabel
+### Scores after whole-specimen hybrid relabel
+
+Hybrid SAM keeps BW-mask boxes. For photos without a mask it prefers SAM only when the box covers roughly the same area as the paper-color estimate; leaflet-sized SAM masks fall back to color (`color-over-sam`).
 
 | Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| yolo26s | 1.000 | 0.998 | 0.995 | 0.937 | 0.364 | 0.220 |
-| yolo26m | 0.998 | 1.000 | 0.995 | 0.937 | 0.329 | 0.204 |
+| yolo26s | 0.988 | 0.988 | 0.984 | 0.946 | 0.376 | 0.207 |
+| yolo26m | 0.976 | 0.988 | 0.981 | 0.924 | 0.350 | 0.196 |
 
-Compare new leaf mAP50-95 against **0.937**.
+Earlier run with broken SAM leaflet labels reported leaf mAP50-95 **0.937** for both, but compound-leaf previews were wrong.
 
 ## 5. Test and predict
 

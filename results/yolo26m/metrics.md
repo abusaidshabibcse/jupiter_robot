@@ -6,16 +6,16 @@
 | Size | 44.26 MB |
 | Image size | 640 |
 | Device | 0 |
-| Evaluated | 2026-11-13T03:45:19.059198+00:00 |
+| Evaluated | 2026-11-17T01:55:28.662630+00:00 |
 
 ## Leaf validation (85 photos)
 
 | Metric | Value |
 | --- | --- |
-| Precision | 0.9976 |
-| Recall | 1.0000 |
-| mAP50 | 0.9950 |
-| mAP50-95 | 0.9365 |
+| Precision | 0.9757 |
+| Recall | 0.9882 |
+| mAP50 | 0.9814 |
+| mAP50-95 | 0.9245 |
 
 Ultralytics plots: `testing/runs/yolo26m/leaf`
 
@@ -23,9 +23,9 @@ Ultralytics plots: `testing/runs/yolo26m/leaf`
 
 | Metric | Value |
 | --- | --- |
-| Precision | 0.6301 |
-| Recall | 0.2812 |
-| mAP50 | 0.3286 |
-| mAP50-95 | 0.2040 |
+| Precision | 0.7006 |
+| Recall | 0.2798 |
+| mAP50 | 0.3499 |
+| mAP50-95 | 0.1963 |
 
 Ultralytics plots: `testing/runs/yolo26m/coco128`

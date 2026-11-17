@@ -124,6 +124,30 @@ def box_ok(box: tuple[float, float, float, float], width: int, height: int) -> b
     return 0.002 <= area <= 0.90
 
 
+def box_area(box: tuple[float, float, float, float]) -> float:
+    x1, y1, x2, y2 = box
+    return max(0.0, x2 - x1) * max(0.0, y2 - y1)
+
+
+def prefer_whole_specimen(
+    candidate: tuple[float, float, float, float] | None,
+    color: tuple[float, float, float, float] | None,
+    min_area_ratio: float = 0.40,
+) -> tuple[float, float, float, float] | None:
+    """Drop leaflet-sized teacher boxes when the color method covers the whole leaf.
+
+    Center-point SAM often segments one leaflet of a compound leaf. The paper-color
+    box covers every leaflet, so keep color when the teacher box is much smaller.
+    """
+    if candidate is None:
+        return color
+    if color is None:
+        return candidate
+    if box_area(candidate) < min_area_ratio * box_area(color):
+        return color
+    return candidate
+
+
 def predict_box_sam(model, image_path: Path) -> tuple[float, float, float, float] | None:
     """Center-point prompt; keep the largest mask that is not full-frame."""
     with Image.open(image_path) as image:
@@ -215,16 +239,22 @@ def load_predictor(backend: str, teacher: Path | str, device: str, conf: float):
         def predict(image_path: Path):
             with Image.open(image_path) as image:
                 width, height = image.size
+            color = predict_box_color(image_path)
             box = predict_box_sam(model, image_path)
             if box is not None and box_ok(box, width, height):
+                chosen = prefer_whole_specimen(box, color)
+                if chosen is color and color is not None and chosen != box:
+                    return color, "color-over-sam"
                 return box, "sam"
             if yolo_fallback is not None:
                 box = predict_box_yolo(yolo_fallback, image_path, conf)
                 if box is not None and box_ok(box, width, height):
+                    chosen = prefer_whole_specimen(box, color)
+                    if chosen is color and color is not None and chosen != box:
+                        return color, "color-over-yolo"
                     return box, "yolo-fallback"
-            box = predict_box_color(image_path)
-            if box is not None:
-                return box, "color-fallback"
+            if color is not None:
+                return color, "color-fallback"
             return None, None
 
         return predict, str(teacher)
@@ -236,12 +266,15 @@ def load_predictor(backend: str, teacher: Path | str, device: str, conf: float):
     def predict(image_path: Path):
         with Image.open(image_path) as image:
             width, height = image.size
+        color = predict_box_color(image_path)
         box = predict_box_yolo(model, image_path, conf)
         if box is not None and box_ok(box, width, height):
+            chosen = prefer_whole_specimen(box, color)
+            if chosen is color and color is not None and chosen != box:
+                return color, "color-over-yolo"
             return box, "yolo"
-        box = predict_box_color(image_path)
-        if box is not None:
-            return box, "color-fallback"
+        if color is not None:
+            return color, "color-fallback"
         return None, None
 
     return predict, str(teacher)

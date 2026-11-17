@@ -16,7 +16,7 @@ Start with [docs/PROJECT.md](docs/PROJECT.md). For the ideas behind those steps,
 
 `yolo26s` and `yolo26m` each have their own training script and hyperparameter spec. The leaf row is the performance number for this project. `predict.py` defaults to `training/runs/yolo26s/weights/best.pt`.
 
-Baseline leaf mAP50-95 (before hybrid relabel): **0.937** for both.
+Leaf mAP50-95 after whole-specimen hybrid relabel: **0.946** (`yolo26s`), **0.924** (`yolo26m`). Earlier broken SAM leaflet boxes scored **0.937** but looked wrong on compound leaves.
 
 ```bash
 # Free GPU if local LLM is up:  cd ~/Files/project/local_llm && ./stop.sh

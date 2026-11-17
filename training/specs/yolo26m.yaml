@@ -1,18 +1,19 @@
-# yolo26m. At learning rate 0.001 the first epoch left leaf mAP50-95 at
-# 0.066. The medium model takes a smaller step, more decay, and less mosaic
-# so it does not memorize the studio paper. best.pt is chosen on leaf photos.
-epochs: 80
-patience: 30
+# yolo26m. After whole-specimen hybrid labels, the old low-lr / high-decay
+# recipe early-stopped near leaf mAP50-95 0.81. Give the medium head more
+# epochs to tighten boxes, with a milder step than s and less paper-memorizing
+# mosaic. best.pt is chosen on leaf photos.
+epochs: 100
+patience: 45
 batch: 16
 imgsz: 640
-freeze: 10
-lr0: 0.0004
+freeze: 8
+lr0: 0.0006
 lrf: 0.01
-warmup_epochs: 3
-weight_decay: 0.001
-degrees: 5
-flipud: 0.1
+warmup_epochs: 2
+weight_decay: 0.0005
+degrees: 10
+flipud: 0.2
 fliplr: 0.5
-mosaic: 0.4
-close_mosaic: 15
+mosaic: 0.5
+close_mosaic: 20
 val: leaf
