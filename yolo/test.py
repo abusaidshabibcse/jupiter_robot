@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Score the fine-tuned YOLO26 checkpoints on leaf val and held-out COCO128.
 
-    python testing/test.py
-    python testing/test.py --model yolo26s yolo26m
+    python yolo/test.py
+    python yolo/test.py --model yolo26s yolo26m
 
 Leaf score is the number that says whether leaf detection worked.
 The COCO128 score uses the 20% of COCO128 that was kept out of training.
-Results are written under testing/runs/<model>/leaf and testing/runs/<model>/coco128
+Results are written under yolo/eval/<model>/leaf and yolo/eval/<model>/coco128
 so the runs do not overwrite each other.
 """
 
@@ -27,7 +27,7 @@ def allowed_list() -> str:
 
 
 def best_pt(root: Path, name: str) -> Path:
-    return root / "training" / "runs" / name / "weights" / "best.pt"
+    return root / "yolo" / "runs" / name / "weights" / "best.pt"
 
 
 def parse_model_name(root: Path, raw: str) -> str:
@@ -49,7 +49,7 @@ def parse_model_name(root: Path, raw: str) -> str:
         return stem
     raise SystemExit(
         f"Refusing model '{raw}'. Choose one of: {allowed_list()}\n"
-        "Or pass that run's training/runs/<model>/weights/best.pt path."
+        "Or pass that run's yolo/runs/<model>/weights/best.pt path."
     )
 
 
@@ -77,7 +77,7 @@ def leaf_metrics(metrics) -> dict[str, float]:
 
 
 def trained_batch(root: Path, model_name: str) -> int | None:
-    args_path = root / "training" / "runs" / model_name / "args.yaml"
+    args_path = root / "yolo" / "runs" / model_name / "args.yaml"
     if not args_path.is_file():
         return None
     for line in args_path.read_text().splitlines():
@@ -93,7 +93,7 @@ def score_one(root: Path, model_name: str, device: str, imgsz: int) -> dict:
     if not weights.is_file():
         raise SystemExit(
             f"Weights not found for model '{model_name}': {weights}\n"
-            "Train first with: python training/train_yolo26s.py or train_yolo26m.py"
+            "Train first with: python yolo/train_yolo26s.py or yolo/train_yolo26m.py"
         )
 
     leaf_yaml = root / "dataset" / "combined" / "coco128_leaf" / "leaf_val.yaml"
@@ -102,7 +102,7 @@ def score_one(root: Path, model_name: str, device: str, imgsz: int) -> dict:
         raise SystemExit("Combined dataset yaml missing. Run dataset/combined/build_coco128_leaf.py")
 
     model = YOLO(str(weights))
-    project = str(root / "testing" / "runs" / model_name)
+    project = str(root / "yolo" / "eval" / model_name)
     print(f"\n=== {model_name}: leaf ===", flush=True)
     leaf = model.val(
         data=str(leaf_yaml),
@@ -137,8 +137,8 @@ def score_one(root: Path, model_name: str, device: str, imgsz: int) -> dict:
             "map50_95": float(coco.box.map),
         },
         "testing_runs": {
-            "leaf": f"testing/runs/{model_name}/leaf",
-            "coco128": f"testing/runs/{model_name}/coco128",
+            "leaf": f"yolo/eval/{model_name}/leaf",
+            "coco128": f"yolo/eval/{model_name}/coco128",
         },
     }
 
@@ -222,7 +222,7 @@ def write_summary(results_dir: Path, rows: list[dict]) -> None:
         "# Model comparison",
         "",
         "Leaf detection on the held-out 85 leaf photos, plus held-out COCO128.",
-        "Each model has its own folder under `results/` for the report.",
+        "Each model has its own folder under `yolo/results/` for the report.",
         "The leaf row is the performance number for this project.",
         "",
         "| Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |",
@@ -245,7 +245,7 @@ def write_summary(results_dir: Path, rows: list[dict]) -> None:
             "## How to reproduce",
             "",
             "```bash",
-            "python testing/test.py",
+            "python yolo/test.py",
             "```",
             "",
         ]
@@ -269,7 +269,7 @@ def main() -> None:
     parser.add_argument("--model", nargs="*", default=None,
                         help=f"Subset to score. Default: both ({allowed_list()}).")
     parser.add_argument("--weights", type=Path, default=None,
-                        help="One of the training/runs/<model>/weights/best.pt files.")
+                        help="One of the yolo/runs/<model>/weights/best.pt files.")
     parser.add_argument("--device", default="0")
     parser.add_argument("--imgsz", type=int, default=640)
     args = parser.parse_args()
@@ -281,7 +281,7 @@ def main() -> None:
     else:
         models = ALLOWED
 
-    results_dir = root / "results"
+    results_dir = root / "yolo" / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     for model_name in models:
         row = score_one(root, model_name, args.device, args.imgsz)

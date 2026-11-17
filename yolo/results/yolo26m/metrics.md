@@ -2,7 +2,7 @@
 
 | Item | Value |
 | --- | --- |
-| Weights | `training/runs/yolo26m/weights/best.pt` |
+| Weights | `yolo/runs/yolo26m/weights/best.pt` |
 | Size | 44.26 MB |
 | Image size | 640 |
 | Device | 0 |
@@ -17,7 +17,7 @@
 | mAP50 | 0.9814 |
 | mAP50-95 | 0.9245 |
 
-Ultralytics plots: `testing/runs/yolo26m/leaf`
+Ultralytics plots: `yolo/eval/yolo26m/leaf`
 
 ## Held-out COCO128 (26 photos)
 
@@ -28,4 +28,4 @@ Ultralytics plots: `testing/runs/yolo26m/leaf`
 | mAP50 | 0.3499 |
 | mAP50-95 | 0.1963 |
 
-Ultralytics plots: `testing/runs/yolo26m/coco128`
+Ultralytics plots: `yolo/eval/yolo26m/coco128`

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Draw detections and save the images under testing/runs/predict/.
+"""Draw detections and save the images under yolo/eval/predict/.
 
-    python testing/predict.py --source photo.jpg
-    python testing/predict.py --model yolo26m --source photo.jpg
+    python yolo/predict.py --source photo.jpg
+    python yolo/predict.py --model yolo26m --source photo.jpg
 
-The default weights are training/runs/yolo26s/weights/best.pt.
+The default weights are yolo/runs/yolo26s/weights/best.pt.
 --model accepts yolo26s or yolo26m (or that run's best.pt path).
 """
 
@@ -24,7 +24,7 @@ def allowed_list() -> str:
 
 
 def best_pt(root: Path, name: str) -> Path:
-    return root / "training" / "runs" / name / "weights" / "best.pt"
+    return root / "yolo" / "runs" / name / "weights" / "best.pt"
 
 
 def resolve_weights(root: Path, model: str) -> tuple[Path, str]:
@@ -45,18 +45,18 @@ def resolve_weights(root: Path, model: str) -> tuple[Path, str]:
         return best_pt(root, stem), stem
     raise SystemExit(
         f"Refusing model '{model}'. Choose one of: {allowed_list()}\n"
-        "Or pass that run's training/runs/<model>/weights/best.pt path."
+        "Or pass that run's yolo/runs/<model>/weights/best.pt path."
     )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    testing_dir = Path(__file__).resolve().parent
-    root = testing_dir.parent
+    yolo_dir = Path(__file__).resolve().parent
+    root = yolo_dir.parent
     parser.add_argument("--model", default="yolo26s",
                         help=f"One of {allowed_list()}, or that run's best.pt. Default: yolo26s.")
     parser.add_argument("--weights", type=Path, default=None,
-                        help="Explicit best.pt. Must be one of the six fine-tuned checkpoints.")
+                        help="Explicit best.pt. Must be yolo26s or yolo26m.")
     parser.add_argument("--source", required=True, help="Image, folder, or video.")
     parser.add_argument("--conf", type=float, default=0.25)
     parser.add_argument("--imgsz", type=int, default=416,
@@ -64,17 +64,17 @@ def main() -> None:
     parser.add_argument("--device", default="cpu",
                         help="cpu, or a GPU index such as 0.")
     parser.add_argument("--out", type=Path, default=None,
-                        help="Output folder. Defaults to testing/runs/predict/<model>/.")
+                        help="Output folder. Defaults to yolo/eval/predict/<model>/.")
     args = parser.parse_args()
 
     weights, run_tag = resolve_weights(root, str(args.weights) if args.weights else args.model)
     if not weights.is_file():
         raise SystemExit(
             f"Weights not found: {weights}\n"
-            "Train first with: python training/train.py"
+            "Train first with: python yolo/train_yolo26s.py or yolo/train_yolo26m.py"
         )
 
-    out_dir = args.out or (testing_dir / "runs" / "predict" / run_tag)
+    out_dir = args.out or (yolo_dir / "eval" / "predict" / run_tag)
 
     from ultralytics import YOLO
 

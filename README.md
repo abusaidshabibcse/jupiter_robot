@@ -1,12 +1,11 @@
 # Leaf detection
 
-Dataset work, training, testing, and report results each have their own folder.
+Dataset work stays in `dataset/`. Training, testing, and report numbers live in `yolo/`.
 
 | Folder | What is in it |
 | --- | --- |
 | `dataset/` | The zip, the labels, the label check, and the COCO128 + leaf training set |
-| `training/` | Fine-tune YOLO26s. Weights go in `training/runs/` |
-| `testing/` | Score the held-out photos and draw boxes on new ones |
+| `yolo/` | Fine-tune YOLO26s and YOLO26m, score them, and draw boxes. Weights go in `yolo/runs/` |
 | `docs/PROJECT.md` | Labeling through training and testing, including the technique and scores |
 | `docs/LEARNING.md` | What YOLO is, why the sizes differ, how to read the scores, and how to experiment |
 
@@ -14,7 +13,7 @@ Start with [docs/PROJECT.md](docs/PROJECT.md). For the ideas behind those steps,
 
 ## Models
 
-`yolo26s` and `yolo26m` each have their own training script and hyperparameter spec. The leaf row is the performance number for this project. `predict.py` defaults to `training/runs/yolo26s/weights/best.pt`.
+`yolo26s` and `yolo26m` each have their own training script and hyperparameter spec. The leaf row is the performance number for this project. `predict.py` defaults to `yolo/runs/yolo26s/weights/best.pt`.
 
 Leaf mAP50-95 after whole-specimen hybrid relabel: **0.946** (`yolo26s`), **0.924** (`yolo26m`). Earlier broken SAM leaflet boxes scored **0.937** but looked wrong on compound leaves.
 
@@ -26,8 +25,10 @@ python dataset/labeling/relabel_with_teacher.py --mode hybrid --backend sam
 python dataset/labeling/check_labels.py
 python dataset/combined/build_coco128_leaf.py
 
-python training/train_yolo26s.py
-python training/train_yolo26m.py
-python testing/test.py
-python testing/predict.py --source photo.jpg
+python yolo/train_yolo26s.py
+python yolo/train_yolo26m.py
+python yolo/test.py
+python yolo/predict.py --source photo.jpg
 ```
+
+Checkpoint files (`*.pt`, including `sam2.1_l.pt` and `yolo/weights/`) stay on this machine. They are listed in `.gitignore` and are not part of the GitHub repo.

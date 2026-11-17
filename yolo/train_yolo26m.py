@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Fine-tune yolo26m with training/specs/yolo26m.yaml.
+"""Fine-tune yolo26m with yolo/specs/yolo26m.yaml.
 
-    python training/train_yolo26m.py
+    python yolo/train_yolo26m.py
 
 Uses dataset/combined/coco128_leaf/train_leaf_val.yaml by default so best.pt
-follows leaf validation. On OOM, retries at batch 8. See training/README.md.
+follows leaf validation. On OOM, retries at batch 8. Base weights are
+yolo/weights/yolo26m.pt. See yolo/README.md.
 """
 
 from __future__ import annotations

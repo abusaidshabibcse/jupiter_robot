@@ -8,12 +8,12 @@ Each trained model has its own folder. Use these files in the report instead of 
 | `summary.csv` | Same numbers for spreadsheets |
 | `<model>/metrics.md` | One-model write-up |
 | `<model>/metrics.json` | Machine-readable metrics |
-| `../testing/runs/<model>/leaf/` | Ultralytics plots for leaf val |
-| `../testing/runs/<model>/coco128/` | Ultralytics plots for held-out COCO128 |
+| `../eval/<model>/leaf/` | Ultralytics plots for leaf val |
+| `../eval/<model>/coco128/` | Ultralytics plots for held-out COCO128 |
 
 ```bash
 source .venv/bin/activate
-python testing/test.py
+python yolo/test.py
 ```
 
 Models compared: `yolo26s`, `yolo26m`. Baseline leaf mAP50-95 before hybrid relabel: **0.937**.

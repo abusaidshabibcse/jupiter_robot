@@ -1,7 +1,7 @@
 # Model comparison
 
 Leaf detection on the held-out 85 leaf photos, plus held-out COCO128.
-Each model has its own folder under `results/` for the report.
+Each model has its own folder under `yolo/results/` for the report.
 The leaf row is the performance number for this project.
 
 | Model | Leaf precision | Leaf recall | Leaf mAP50 | Leaf mAP50-95 | COCO128 mAP50 | COCO128 mAP50-95 |
@@ -12,5 +12,5 @@ The leaf row is the performance number for this project.
 ## How to reproduce
 
 ```bash
-python testing/test.py
+python yolo/test.py
 ```

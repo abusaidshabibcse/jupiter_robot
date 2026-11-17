@@ -1,6 +1,8 @@
 # Learning this project
 
-This file is the teaching guide. Commands, folder layout, and the measured run live in [PROJECT.md](PROJECT.md). Read this first if you want to know what the pieces mean, then use `PROJECT.md` when you actually run them.
+This file is the teaching guide. Commands, folder layout, and the measured runs live in [PROJECT.md](PROJECT.md). Read this first if you want to know what the pieces mean, then use `PROJECT.md` when you actually run them.
+
+Runnable code is in `yolo/`. `yolo/train_yolo26s.py` and `yolo/train_yolo26m.py` are the trainers. `yolo/test.py` scores them. `yolo/predict.py` draws boxes. Checkpoint files are gitignored.
 
 One fact to keep in front of every table below: this repository has fine-tuned **one** checkpoint, `yolo26s.pt`. The leaf scores in this file are that run. YOLOv8 and YOLO11 appear because they are the natural comparison set on the same Ultralytics API. They have not been trained on these leaves, so there is no winner among them yet.
 
@@ -69,11 +71,11 @@ Three details matter:
 
 ### Train, test, predict
 
-`training/train.py` loads `yolo26s.pt` and fine-tunes it. Weights and the curve go to `training/runs/coco128-leaf/`. The file to keep is `weights/best.pt`.
+`yolo/train_yolo26s.py` loads `yolo/weights/yolo26s.pt` and fine-tunes it. `yolo/train_yolo26m.py` does the same for the medium checkpoint. Weights and the curve go to `yolo/runs/<model>/`. The file to keep is `weights/best.pt`.
 
-`testing/test.py` scores that file twice: once on `leaf_val.yaml` (the 85 leaf photos) and once on `coco128_val.yaml` (the 26 held-out COCO photos). The leaf row is the leaf-detection result.
+`yolo/test.py` scores each file twice: once on `leaf_val.yaml` (the 85 leaf photos) and once on `coco128_val.yaml` (the 26 held-out COCO photos). The leaf row is the leaf-detection result.
 
-`testing/predict.py` draws boxes on a new photo and writes them under `testing/runs/predict/`. In this checkpoint the leaf class is still class **80**, and the printed name is `leaf`.
+`yolo/predict.py` draws boxes on a new photo and writes them under `yolo/eval/predict/`. In this checkpoint the leaf class is still class **80**, and the printed name is `leaf`.
 
 ## 3. What YOLO is
 
@@ -101,7 +103,7 @@ The leaf set is 443 photos of one specimen on paper. The backbone already knows 
 
 ## 4. Why the training recipe looks like this
 
-`training/train.py` uses the same settings on every run so a later comparison measures the model, not a changed recipe.
+Each size has its own spec in `yolo/specs/`, so a later comparison can change one recipe without changing the other.
 
 | Choice | What it does here |
 | --- | --- |
@@ -123,7 +125,7 @@ Augmentation here means randomly changing a training photo so the same leaf is s
 | Stack | Python 3.12, PyTorch 2.15 + CUDA, Ultralytics 8.4 |
 | Train rows | 460 (102 COCO128 + 358 leaf) |
 | Epochs run | 21, then early stop |
-| Checkpoint kept | `training/runs/coco128-leaf/weights/best.pt`, the mixed-val peak at **epoch 1** |
+| Checkpoint kept | `yolo/runs/<model>/weights/best.pt`. An early mixed-val run peaked at **epoch 1** |
 
 An epoch is one pass through the training rows. Early stopping watched the **mixed** COCO+leaf validation score. Epoch 1 won that mixed score, so that checkpoint was saved even though training continued to epoch 21. Leaf-only testing of that file is the number that matters for this project. Mixed mAP can fall because the 80 COCO classes get noisy on 128 photos, while the leaf class is already in good shape.
 
@@ -206,7 +208,7 @@ The leaf training split is 358 photos, all one specimen on studio paper. A large
 
 ## 7. How to read a score, and how to decide
 
-`testing/test.py` prints a row per class. For this project, read the **`leaf` row**. The `all` row during training mixes held-out COCO with leaves, so it is the early-stopping signal, not the leaf score.
+`yolo/test.py` prints a row per class. For this project, read the **`leaf` row**. The `all` row during training mixes held-out COCO with leaves, so it is the early-stopping signal, not the leaf score.
 
 Walk one prediction before the averages:
 
@@ -233,7 +235,7 @@ Compare two checkpoints only when the val photos, the image size, and the test s
 1. **Leaf mAP50-95.** This is the primary score. Higher is a better leaf model on this set.
 2. **Leaf mAP50.** Use it to see whether a drop in mAP50-95 is “missed the leaf” or “found it, loose box.”
 3. **Precision and recall.** A model can raise precision by staying quiet and missing leaves, or raise recall by drawing extra boxes. Read them as a pair.
-4. **The pictures.** Open `testing/runs/` and a few `predict.py` images, especially Pinus and Papaver. A metric can rise while a thin leaf grows a box that includes a wide margin of paper.
+4. **The pictures.** Open `yolo/eval/` and a few `predict.py` images, especially Pinus and Papaver. A metric can rise while a thin leaf grows a box that includes a wide margin of paper.
 5. **Speed and memory on this machine.** Record seconds per validation pass, or images per second, and the batch that fit. A medium model that gains 0.01 mAP50-95 and no longer fits the 3060 is a worse tool for this project.
 6. **Held-out COCO128 mAP.** This says whether `person` and the other COCO classes still fire on photos the trainer did not use. It is a forgetting check. It is not the leaf score, and 26 photos cannot prove the 80 classes are healthy.
 
@@ -252,28 +254,26 @@ Change one thing at a time. Otherwise a higher score has no cause. Keep a row fo
 | Epochs run | The log, not the `--epochs` cap |
 | Best epoch | The epoch number stored in `best.pt` |
 | Batch and image size | Especially if you had to drop the batch |
-| Leaf P, R, mAP50, mAP50-95 | From `testing/test.py` |
+| Leaf P, R, mAP50, mAP50-95 | From `yolo/test.py` |
 | COCO128 mAP50, mAP50-95 | The forgetting check |
 | What the pictures showed | Tight box, paper included, missed needles, extra boxes |
 
-`train.py` already exposes the knobs. Give each run its own `--name` so it does not collide with `training/runs/coco128-leaf/`.
+The trainers are `yolo/train_yolo26s.py` and `yolo/train_yolo26m.py`. Each writes `yolo/runs/<model>/` and will replace that folder if you train again without `--resume`.
 
 ### First comparison: size, same generation
 
-Train nano and medium with the recipe unchanged. Score each `best.pt` by passing `--weights`.
+Small and medium already have separate scripts and specs. Score both after training.
 
 ```bash
-python training/train.py --model yolo26n.pt --name yolo26n
-python training/train.py --model yolo26m.pt --name yolo26m
-
-python testing/test.py --weights training/runs/yolo26n/weights/best.pt
-python testing/test.py --weights training/runs/yolo26m/weights/best.pt
+python yolo/train_yolo26s.py
+python yolo/train_yolo26m.py
+python yolo/test.py
 ```
 
-`test.py` writes both evaluations under `testing/runs/leaf` and `testing/runs/coco128` and will overwrite those folders on the next call. Copy the printed metrics into your table, or copy the run folder aside, before you start the next model. If `yolo26m` runs out of memory:
+`test.py` writes plots under `yolo/eval/<model>/leaf` and `yolo/eval/<model>/coco128`. If `yolo26m` runs out of memory it retries at batch 8, or you can pass the batch yourself:
 
 ```bash
-python training/train.py --model yolo26m.pt --name yolo26m --batch 8
+python yolo/train_yolo26m.py --batch 8
 ```
 
 Put the leaf mAP50-95 of `yolo26n` and `yolo26m` next to the existing `yolo26s` numbers (0.930 / 0.528). The size that wins is the one with the higher leaf mAP50-95 whose pictures still hug the specimen and whose batch still fits the GPU.
@@ -282,12 +282,7 @@ Put the leaf mAP50-95 of `yolo26n` and `yolo26m` next to the existing `yolo26s` 
 
 Once size is settled, change only the starting file. For the small size:
 
-```bash
-python training/train.py --model yolov8s.pt --name yolov8s
-python training/train.py --model yolo11s.pt --name yolo11s
-python testing/test.py --weights training/runs/yolov8s/weights/best.pt
-python testing/test.py --weights training/runs/yolo11s/weights/best.pt
-```
+The current trainers only load YOLO26 s and m. A YOLOv8 or YOLO11 comparison needs a new script beside `yolo/train_yolo26s.py`, pointed at that generation's `.pt` file, with its own `yolo/runs/<name>/` folder. Score it with `python yolo/test.py` only after that script's `best.pt` is one of the allowed checkpoints.
 
 The existing `coco128-leaf` run is the YOLO26s arm of that comparison. Keep its leaf row. The generation with the higher leaf mAP50-95, at the same batch and image size, is the better starting checkpoint **for these leaves**. A higher official COCO mAP does not settle that question by itself.
 
@@ -295,20 +290,20 @@ Medium versions, if you want the six-model grid, are `yolov8m.pt`, `yolo11m.pt`,
 
 ### Third experiment: unfreeze, smaller step
 
-The script’s help text already points at a second stage. After a frozen run looks sane, train further with the backbone unlocked and a smaller learning rate, from the `best.pt` you just made:
+After a frozen run looks sane, train further with the backbone unlocked and a smaller learning rate. Copy the run first. A new train deletes `yolo/runs/yolo26s/` before it starts, and that folder holds the checkpoint you want to continue from:
 
 ```bash
-python training/train.py \
-  --model training/runs/coco128-leaf/weights/best.pt \
-  --name yolo26s-unfreeze \
+cp -a yolo/runs/yolo26s /tmp/yolo26s-frozen
+python yolo/train_yolo26s.py \
+  --weights /tmp/yolo26s-frozen/weights/best.pt \
   --freeze 0 \
   --lr0 0.0003
 ```
 
-Use a new `--name`. Judge it with the leaf row again. If mAP50-95 rises and the previews stay tight, the backbone had something left to adapt. If the score rises on the 85 val photos but new photos get worse, the unlocked network memorized the studio set. Val photos were held out of training, and they are still the same paper and the same camera. A photo from a different room is a stronger check. `predict.py` is how you look:
+Judge it with the leaf row again. If mAP50-95 rises and the previews stay tight, the backbone had something left to adapt. If the score rises on the 85 val photos but new photos get worse, the unlocked network memorized the studio set. Val photos were held out of training, and they are still the same paper and the same camera. A photo from a different room is a stronger check. `predict.py` is how you look:
 
 ```bash
-python testing/predict.py --model training/runs/yolo26s-unfreeze/weights/best.pt --source path/to/photo.jpg
+python yolo/predict.py --source path/to/photo.jpg
 ```
 
 ### Knobs worth touching only after those three
@@ -327,8 +322,8 @@ Leave mosaic, flips, and rotation alone until a size and a generation have a cle
 ### A small loop you can repeat
 
 1. Pick one question (“does medium beat small on leaf mAP50-95?”).
-2. Train with one flag changed and a fresh `--name`.
-3. Run `testing/test.py --weights .../best.pt` and copy both rows.
+2. Copy the previous `yolo/runs/<model>/` aside, then train with one flag changed.
+3. Run `yolo/test.py` and copy both rows.
 4. Draw boxes on two easy leaves and two thin ones.
 5. Write the row, including the best epoch and the batch.
 6. Keep the checkpoint only if leaf mAP50-95 is up and the boxes still leave the paper outside.

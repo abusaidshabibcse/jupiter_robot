@@ -1,3 +1,7 @@
-ultralytics>=8.4.0
-numpy>=1.24
+# Python 3.12. Covers yolo/ training and testing, plus dataset labeling.
+# ultralytics brings PyTorch, torchvision, and OpenCV, and it loads SAM2 weights.
+# If this machine already has a CUDA PyTorch build, install that before this file
+# so pip does not replace it with a CPU wheel.
+ultralytics>=8.4.211
+numpy>=1.26
 Pillow>=10.0

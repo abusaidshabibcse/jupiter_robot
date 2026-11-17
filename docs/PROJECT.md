@@ -4,8 +4,8 @@ This project turns `leaf.zip` into a YOLO dataset, checks the boxes, optionally 
 
 | Run folder | Base weights | Trainer |
 | --- | --- | --- |
-| `training/runs/yolo26s/` | `yolo26s.pt` | `training/train_yolo26s.py` |
-| `training/runs/yolo26m/` | `yolo26m.pt` | `training/train_yolo26m.py` |
+| `yolo/runs/yolo26s/` | `yolo/weights/yolo26s.pt` | `yolo/train_yolo26s.py` |
+| `yolo/runs/yolo26m/` | `yolo/weights/yolo26m.pt` | `yolo/train_yolo26m.py` |
 
 ## Folders
 
@@ -21,16 +21,17 @@ jupiter/
     labeled/leaf/                 YOLO leaf dataset and the preview images
     combined/coco128/             the 128 COCO images, downloaded once
     combined/coco128_leaf/        the dataset training actually reads
-  training/
+  yolo/
     train_yolo26s.py / train_yolo26m.py
     specs/yolo26s.yaml / yolo26m.yaml
-    runs/<model>/                 one folder per trained checkpoint
-  testing/
+    weights/                      COCO starting checkpoints, not pushed
+    runs/<model>/                 one folder per trained checkpoint, not pushed
     test.py                       scores leaf val and held-out COCO128
     predict.py                    draws boxes on new photos
-  results/
-    summary.md                    comparison table for the report
-    <model>/metrics.md            one-model write-up
+    eval/                         plots, not pushed
+    results/
+      summary.md                  comparison table for the report
+      <model>/metrics.md          one-model write-up
 ```
 
 ## 0. Environment
@@ -98,8 +99,8 @@ Separate recipes:
 | `yolo26m` | 100 epochs, patience 45, lr0 `0.0006`, freeze 8, mosaic 0.5 |
 
 ```bash
-python training/train_yolo26s.py
-python training/train_yolo26m.py
+python yolo/train_yolo26s.py
+python yolo/train_yolo26m.py
 ```
 
 If `yolo26m` OOMs, it retries at batch 8 (or pass `--batch 8`).
@@ -118,9 +119,9 @@ Earlier run with broken SAM leaflet labels reported leaf mAP50-95 **0.937** for 
 ## 5. Test and predict
 
 ```bash
-python testing/test.py
-python testing/predict.py --source path/to/photo.jpg
-python testing/predict.py --model yolo26m --source path/to/photo.jpg
+python yolo/test.py
+python yolo/predict.py --source path/to/photo.jpg
+python yolo/predict.py --model yolo26m --source path/to/photo.jpg
 ```
 
 ## Order of commands (Plan A)
@@ -132,9 +133,9 @@ python dataset/labeling/check_labels.py
 python dataset/labeling/relabel_with_teacher.py --mode hybrid --backend sam
 python dataset/labeling/check_labels.py
 python dataset/combined/build_coco128_leaf.py
-python training/train_yolo26s.py
-python training/train_yolo26m.py
-python testing/test.py
+python yolo/train_yolo26s.py
+python yolo/train_yolo26m.py
+python yolo/test.py
 ```
 
 Run the check after relabel. Rebuild the combined dataset after any labeling change so class 80 stays in sync.

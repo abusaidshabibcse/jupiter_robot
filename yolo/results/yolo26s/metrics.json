@@ -1,6 +1,6 @@
 {
   "model": "yolo26s",
-  "weights": "training/runs/yolo26s/weights/best.pt",
+  "weights": "yolo/runs/yolo26s/weights/best.pt",
   "weights_mb": 20.43,
   "batch": 16,
   "imgsz": 640,
@@ -19,7 +19,7 @@
     "map50_95": 0.20718223971556837
   },
   "testing_runs": {
-    "leaf": "testing/runs/yolo26s/leaf",
-    "coco128": "testing/runs/yolo26s/coco128"
+    "leaf": "yolo/eval/yolo26s/leaf",
+    "coco128": "yolo/eval/yolo26s/coco128"
   }
 }

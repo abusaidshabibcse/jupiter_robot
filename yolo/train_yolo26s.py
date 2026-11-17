@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Fine-tune yolo26s with training/specs/yolo26s.yaml.
+"""Fine-tune yolo26s with yolo/specs/yolo26s.yaml.
 
-    python training/train_yolo26s.py
+    python yolo/train_yolo26s.py
 
 Uses dataset/combined/coco128_leaf/train_leaf_val.yaml by default so best.pt
-follows leaf validation. See training/README.md.
+follows leaf validation. Base weights are yolo/weights/yolo26s.pt.
+See yolo/README.md.
 """
 
 from __future__ import annotations

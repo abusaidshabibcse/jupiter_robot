@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-TRAINING = Path(__file__).resolve().parent
+YOLO = Path(__file__).resolve().parent
 DEFAULT_DATA = ROOT / "dataset" / "combined" / "coco128_leaf" / "train_leaf_val.yaml"
 
 
@@ -48,11 +48,13 @@ def build_parser(stem: str, spec_path: Path) -> argparse.ArgumentParser:
         description=f"Fine-tune {stem} using {spec_path.name}."
     )
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
-    parser.add_argument("--weights", type=Path, default=ROOT / f"{stem}.pt")
+    parser.add_argument("--weights", type=Path, default=YOLO / "weights" / f"{stem}.pt")
     parser.add_argument("--spec", type=Path, default=spec_path)
     parser.add_argument("--epochs", type=int, default=int(spec.get("epochs", 80)))
     parser.add_argument("--imgsz", type=int, default=int(spec.get("imgsz", 640)))
     parser.add_argument("--batch", type=int, default=int(spec.get("batch", 16)))
+    parser.add_argument("--freeze", type=int, default=int(spec.get("freeze", 10)))
+    parser.add_argument("--lr0", type=float, default=float(spec.get("lr0", 0.001)))
     parser.add_argument("--device", default="0")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--resume", action="store_true")
@@ -61,7 +63,7 @@ def build_parser(stem: str, spec_path: Path) -> argparse.ArgumentParser:
 
 def train_kwargs(stem: str, args: argparse.Namespace, batch: int) -> dict[str, Any]:
     spec = load_spec(args.spec)
-    freeze = int(spec.get("freeze", 10))
+    freeze = int(args.freeze)
     kwargs: dict[str, Any] = {
         "data": str(args.data),
         "epochs": args.epochs,
@@ -71,7 +73,7 @@ def train_kwargs(stem: str, args: argparse.Namespace, batch: int) -> dict[str, A
         "workers": args.workers,
         "freeze": freeze if freeze > 0 else None,
         "optimizer": "AdamW",
-        "lr0": float(spec.get("lr0", 0.001)),
+        "lr0": float(args.lr0),
         "lrf": float(spec.get("lrf", 0.01)),
         "patience": int(spec.get("patience", 20)),
         "warmup_epochs": float(spec.get("warmup_epochs", 1)),
@@ -82,7 +84,7 @@ def train_kwargs(stem: str, args: argparse.Namespace, batch: int) -> dict[str, A
         "mosaic": float(spec.get("mosaic", 1.0)),
         "close_mosaic": int(spec.get("close_mosaic", 10)),
         "cache": True,
-        "project": str(TRAINING / "runs"),
+        "project": str(YOLO / "runs"),
         "name": stem,
         "exist_ok": False,
         "resume": args.resume,
@@ -90,15 +92,24 @@ def train_kwargs(stem: str, args: argparse.Namespace, batch: int) -> dict[str, A
     return kwargs
 
 
+def resolve_weights(given: Path) -> Path:
+    if given.is_absolute():
+        return given
+    for candidate in (YOLO / "weights" / given, YOLO / given, ROOT / given, Path.cwd() / given):
+        if candidate.is_file():
+            return candidate
+    return YOLO / "weights" / given
+
+
 def train_one(stem: str, args: argparse.Namespace, batch: int) -> None:
-    run_dir = TRAINING / "runs" / stem
+    run_dir = YOLO / "runs" / stem
     if args.resume:
         if not run_dir.is_dir():
             raise SystemExit(f"Nothing to resume at {run_dir}")
     elif run_dir.exists():
         shutil.rmtree(run_dir)
 
-    weights = args.weights if args.weights.is_absolute() else ROOT / args.weights
+    weights = resolve_weights(args.weights)
     if not weights.is_file():
         raise SystemExit(f"Base weights not found: {weights}")
     if not args.data.exists():
@@ -118,7 +129,7 @@ def train_one(stem: str, args: argparse.Namespace, batch: int) -> None:
 
 
 def run_trainer(stem: str, allow_oom_retry: bool = False) -> None:
-    spec_path = TRAINING / "specs" / f"{stem}.yaml"
+    spec_path = YOLO / "specs" / f"{stem}.yaml"
     if not spec_path.is_file():
         raise SystemExit(f"Missing spec: {spec_path}")
     parser = build_parser(stem, spec_path)
@@ -137,4 +148,4 @@ def run_trainer(stem: str, allow_oom_retry: bool = False) -> None:
             train_one(stem, args, batch)
         else:
             raise
-    print(f"=== finished {stem} batch {batch} -> training/runs/{stem}/weights/best.pt ===", flush=True)
+    print(f"=== finished {stem} batch {batch} -> yolo/runs/{stem}/weights/best.pt ===", flush=True)

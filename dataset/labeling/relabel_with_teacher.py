@@ -6,7 +6,7 @@
 
     # Optional: fine-tuned YOLO26m
     python dataset/labeling/relabel_with_teacher.py --mode hybrid --backend yolo \
-        --teacher training/runs/yolo26m/weights/best.pt
+        --teacher yolo/runs/yolo26m/weights/best.pt
 
 Modes:
 
@@ -36,7 +36,7 @@ BW_ROOT = RAW / "BW"
 LEAF_CLASS = 0
 TEACHER_LEAF_ID = 80
 DEFAULT_SAM = "sam2.1_l.pt"
-DEFAULT_YOLO = ROOT / "training" / "runs" / "yolo26m" / "weights" / "best.pt"
+DEFAULT_YOLO = ROOT / "yolo" / "runs" / "yolo26m" / "weights" / "best.pt"
 
 
 def mask_index() -> dict[str, Path]:
